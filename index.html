@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1877F2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
   <title>TVWEB Prompter</title>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -31,6 +35,32 @@
     #btnConectar { min-height: 48px; padding: 0 18px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; color: #fff; background: #1877F2; cursor: pointer; }
     #btnConectar.conectado { background: #f02849; }
     .sync-dica { font-size: 12px; color: #888; margin: 0; }
+
+    /* ===== MODO OFFLINE (WebRTC + QR) ===== */
+    .offline-box { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+    .offline-box .of-titulo { font-weight: bold; font-size: 16px; }
+    .offline-box .of-dica { font-size: 12px; color: #888; margin: 0; }
+    .of-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+    .of-botoes button { flex: 1 1 auto; min-height: 48px; padding: 10px 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; color: #fff; cursor: pointer; }
+    #btnOfHost { background: #9C27B0; }
+    #btnOfGuest { background: #FF9800; }
+    #btnOfLerResp, #btnOfSair { background: #555; }
+    #ofStatus { font-size: 13px; font-weight: 600; color: #777; }
+    #ofStatus.on { color: #1a7f37; }
+    #ofStatus.wait { color: #e68a00; }
+    #ofStatus.err { color: #c0392b; }
+    #ofQrArea { display: none; flex-direction: column; align-items: center; gap: 8px; padding: 10px; background: #fafafa; border: 1px dashed #ccc; border-radius: 8px; }
+    #ofQrArea.show { display: flex; }
+    #ofQrImg { width: min(92vw, 480px); height: auto; image-rendering: pixelated; background: #fff; padding: 8px; }
+    #ofQrLegenda { font-size: 13px; color: #444; text-align: center; font-weight: 600; }
+
+    /* Scanner de câmera (overlay) */
+    #scanner { position: fixed; inset: 0; background: #000; z-index: 9998; display: none; flex-direction: column; }
+    #scanner.show { display: flex; }
+    #scanVideo { flex: 1; width: 100%; object-fit: cover; }
+    #scanMsg { position: absolute; top: 16px; left: 0; right: 0; text-align: center; color: #fff; font-size: 16px; font-weight: bold; text-shadow: 0 1px 3px #000; padding: 0 16px; }
+    #scanGuia { position: absolute; top: 50%; left: 50%; width: 64vw; max-width: 360px; aspect-ratio: 1; transform: translate(-50%, -50%); border: 3px solid #42b72a; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0,0,0,.45); }
+    #btnScanCancel { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; min-height: 54px; padding: 14px 28px; background: #f02849; color: #fff; border: none; border-radius: 10px; font-weight: bold; font-size: 17px; }
 
     .arquivos { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .arquivos button, .link-arq {
@@ -192,6 +222,25 @@
       <p class="sync-dica">Use o mesmo código nos dois tablets para sincronizar pauta, ajustes e controles em tempo real.</p>
     </div>
 
+    <!-- ===== MODO OFFLINE (SEM INTERNET) ===== -->
+    <div class="offline-box">
+      <span class="of-titulo">Conexão offline (sem internet)</span>
+      <p class="of-dica">Conecta dois tablets diretamente, pela mesma Wi-Fi ou pelo hotspot de um deles, sem internet. Um tablet cria a conexão e mostra um QR; o outro lê o QR e mostra um QR de resposta para fechar a conexão.</p>
+      <div class="of-botoes">
+        <button id="btnOfHost">Criar conexão (este controla)</button>
+        <button id="btnOfGuest">Entrar (ler QR)</button>
+      </div>
+      <div class="of-botoes">
+        <button id="btnOfLerResp" class="hidden">Ler QR de resposta</button>
+        <button id="btnOfSair" class="hidden">Encerrar conexão</button>
+      </div>
+      <div id="ofStatus">Desconectado.</div>
+      <div id="ofQrArea">
+        <img id="ofQrImg" alt="QR de conexão">
+        <div id="ofQrLegenda"></div>
+      </div>
+    </div>
+
     <div class="arquivos">
       <label class="link-arq">Importar TXT<input type="file" id="fileTxt" accept=".txt" hidden></label>
       <button id="btnSalvar">Salvar pauta</button>
@@ -256,6 +305,14 @@
     </div>
   </div>
 
+  <!-- ===== SCANNER DE CÂMERA (QR) ===== -->
+  <div id="scanner">
+    <div id="scanMsg">Aponte a câmera para o QR Code</div>
+    <video id="scanVideo" playsinline muted></video>
+    <div id="scanGuia"></div>
+    <button id="btnScanCancel">Cancelar</button>
+  </div>
+
   <!-- ===== CUSTOM MODAL ===== -->
   <div id="customModal" class="hidden">
     <div class="modal-content">
@@ -268,9 +325,23 @@
     </div>
   </div>
 
-  <!-- ===== FIREBASE (SDK compat via CDN) ===== -->
+  <!-- ===== BIBLIOTECAS LOCAIS (funcionam offline) ===== -->
+  <script src="libs/lz-string.min.js"></script>
+  <script src="libs/qrcode.min.js"></script>
+  <script src="libs/jsQR.min.js"></script>
+
+  <!-- ===== FIREBASE (SDK compat via CDN — só funciona com internet) ===== -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <!-- ===== REGISTRO DO SERVICE WORKER (cache offline / PWA) ===== -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW falhou:', e));
+      });
+    }
+  </script>
 
   <script>
     /* ============================================================
@@ -633,6 +704,10 @@
     let aplicandoRemoto = false;
     let liveGen = 0;           // contador de "saltos"/resets para forçar realinhamento
 
+    // Estado da conexão offline (WebRTC)
+    let rtcConectado = false;
+    let rtcChannel = null;
+
     function setSyncStatus(estado, texto) {
       const el = $('#syncStatus');
       el.classList.remove('on', 'off', 'err');
@@ -641,33 +716,40 @@
     }
 
     function atualizarIndicadorPrompter() {
-      $('#syncIndicador').classList.toggle('hidden', !conectado);
+      $('#syncIndicador').classList.toggle('hidden', !(conectado || rtcConectado));
     }
 
-    // ----- ESCRITAS (deste dispositivo para o banco) -----
+    // ----- ESCRITAS (deste dispositivo para os outros) -----
+    // Enviadas para o Firebase (se conectado a uma sala) E/OU para o
+    // par WebRTC (se conexão offline ativa).
     function pushPauta() {
-      if (!salaRef || aplicandoRemoto) return;
-      salaRef.child('pauta').set(Pauta);
+      if (aplicandoRemoto) return;
+      if (salaRef) salaRef.child('pauta').set(Pauta);
+      enviarRTC('pauta', Pauta);
     }
     function pushSettings() {
-      if (!salaRef || aplicandoRemoto) return;
-      salaRef.child('settings').set({
+      if (aplicandoRemoto) return;
+      const s = {
         fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
         espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
-      });
+      };
+      if (salaRef) salaRef.child('settings').set(s);
+      enviarRTC('settings', s);
     }
     // bumpGen = true quando a posição mudou (play, salto, voltar) e precisa realinhar os outros
     function pushLive(bumpGen) {
-      if (!salaRef || aplicandoRemoto) return;
+      if (aplicandoRemoto) return;
       if (bumpGen) liveGen++;
-      salaRef.child('live').set({
+      const payload = {
         playing: scrollState.playing,
         offset: scrollState.offset,
         velocidade: Settings.velocidade,
         prompter: !prompterEl.classList.contains('hidden'),
         gen: liveGen,
         by: CLIENT_ID
-      });
+      };
+      if (salaRef) salaRef.child('live').set(payload);
+      enviarRTC('live', payload);
     }
 
     // ----- LEITURAS (do banco para este dispositivo) -----
@@ -789,6 +871,232 @@
     } else {
       setSyncStatus('off', 'Firebase não configurado');
     }
+
+    /* ============================================================
+       ===== CONEXÃO OFFLINE (WebRTC PONTO-A-PONTO + QR) =====
+       ============================================================
+       Sem internet: os dois tablets na mesma Wi-Fi (ou no hotspot de
+       um deles) trocam um "aperto de mão" por QR Code e abrem um canal
+       de dados direto. A partir daí pauta/ajustes/controles trafegam
+       de um tablet para o outro, sem nuvem.
+       Fluxo:
+         HOST (controle): cria oferta -> mostra QR -> lê QR de resposta.
+         GUEST (exibição): lê QR da oferta -> mostra QR de resposta.
+    */
+    let pc = null;             // RTCPeerConnection atual
+    let souHost = false;       // este tablet criou a conexão (controle)
+
+    function ofStatus(estado, texto) {
+      const el = $('#ofStatus');
+      el.classList.remove('on', 'wait', 'err');
+      if (estado) el.classList.add(estado);
+      el.textContent = texto;
+    }
+
+    function mostrarQr(texto, legenda) {
+      const area = $('#ofQrArea');
+      const comprimido = LZString.compressToEncodedURIComponent(texto);
+      const qr = qrcode(0, 'L');         // 0 = versão automática, 'L' = mais capacidade
+      qr.addData(comprimido);
+      qr.make();
+      $('#ofQrImg').src = qr.createDataURL(5, 12);
+      $('#ofQrLegenda').textContent = legenda;
+      area.classList.add('show');
+    }
+
+    function esconderQr() { $('#ofQrArea').classList.remove('show'); }
+
+    // Espera o ICE terminar de coletar candidatos (handshake em um QR só).
+    function esperarIce(conn) {
+      return new Promise((resolve) => {
+        if (conn.iceGatheringState === 'complete') return resolve();
+        let pronto = false;
+        const fim = () => { if (!pronto) { pronto = true; resolve(); } };
+        conn.addEventListener('icegatheringstatechange', () => {
+          if (conn.iceGatheringState === 'complete') fim();
+        });
+        setTimeout(fim, 2500); // fallback: candidatos da rede local já vieram
+      });
+    }
+
+    function criarPeer() {
+      // Sem STUN/TURN: usa candidatos da rede local (mesma Wi-Fi / hotspot).
+      const conn = new RTCPeerConnection({ iceServers: [] });
+      conn.onconnectionstatechange = () => {
+        if (['disconnected', 'failed', 'closed'].includes(conn.connectionState)) {
+          if (rtcConectado) encerrarOffline(true);
+        }
+      };
+      return conn;
+    }
+
+    function ligarCanal(canal) {
+      rtcChannel = canal;
+      canal.onopen = () => {
+        rtcConectado = true;
+        ofStatus('on', '🔗 Conectado ao outro tablet.');
+        esconderQr();
+        $('#btnOfHost').classList.add('hidden');
+        $('#btnOfGuest').classList.add('hidden');
+        $('#btnOfLerResp').classList.add('hidden');
+        $('#btnOfSair').classList.remove('hidden');
+        atualizarIndicadorPrompter();
+        // Só o host envia o estado inicial, para o convidado adotar a
+        // pauta/ajustes do controle (evita sobrescrever com dados vazios).
+        if (souHost) {
+          enviarRTC('pauta', Pauta);
+          enviarRTC('settings', {
+            fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
+            espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
+          });
+        }
+      };
+      canal.onclose = () => { if (rtcConectado) encerrarOffline(true); };
+      canal.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.kind === 'pauta')    aplicarPautaRemota(msg.data);
+        else if (msg.kind === 'settings') aplicarSettingsRemoto(msg.data);
+        else if (msg.kind === 'live')     aplicarLiveRemoto(msg.data);
+      };
+    }
+
+    function enviarRTC(kind, data) {
+      if (rtcChannel && rtcChannel.readyState === 'open') {
+        try { rtcChannel.send(JSON.stringify({ kind, data })); } catch (e) {}
+      }
+    }
+
+    function encerrarOffline(silencioso) {
+      try { if (rtcChannel) rtcChannel.close(); } catch (e) {}
+      try { if (pc) pc.close(); } catch (e) {}
+      rtcChannel = null; pc = null; rtcConectado = false;
+      esconderQr();
+      $('#btnOfHost').classList.remove('hidden');
+      $('#btnOfGuest').classList.remove('hidden');
+      $('#btnOfLerResp').classList.add('hidden');
+      $('#btnOfSair').classList.add('hidden');
+      atualizarIndicadorPrompter();
+      ofStatus(silencioso ? 'err' : '', silencioso ? 'Conexão encerrada.' : 'Desconectado.');
+    }
+
+    // ----- HOST: cria a oferta -----
+    async function offlineHost() {
+      try {
+        encerrarOffline(false);
+        souHost = true;
+        ofStatus('wait', 'Gerando QR de conexão…');
+        pc = criarPeer();
+        ligarCanal(pc.createDataChannel('sync'));
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await esperarIce(pc);
+        mostrarQr(JSON.stringify(pc.localDescription),
+          '1) Mostre este QR ao outro tablet. 2) Depois toque em "Ler QR de resposta".');
+        $('#btnOfLerResp').classList.remove('hidden');
+        $('#btnOfSair').classList.remove('hidden');
+        $('#btnOfHost').classList.add('hidden');
+        $('#btnOfGuest').classList.add('hidden');
+        ofStatus('wait', 'Aguardando o outro tablet ler o QR e gerar a resposta…');
+      } catch (e) {
+        console.error(e); ofStatus('err', 'Erro ao criar conexão.');
+      }
+    }
+
+    // ----- HOST: lê o QR de resposta do convidado -----
+    function offlineLerResposta() {
+      abrirScanner(async (texto) => {
+        try {
+          const answer = JSON.parse(texto);
+          await pc.setRemoteDescription(answer);
+          ofStatus('wait', 'Finalizando conexão…');
+        } catch (e) {
+          console.error(e); ofStatus('err', 'QR de resposta inválido.');
+        }
+      });
+    }
+
+    // ----- GUEST: lê o QR da oferta e gera a resposta -----
+    function offlineGuest() {
+      encerrarOffline(false);
+      souHost = false;
+      abrirScanner(async (texto) => {
+        try {
+          ofStatus('wait', 'Gerando QR de resposta…');
+          const offer = JSON.parse(texto);
+          pc = criarPeer();
+          pc.ondatachannel = (ev) => ligarCanal(ev.channel);
+          await pc.setRemoteDescription(offer);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await esperarIce(pc);
+          mostrarQr(JSON.stringify(pc.localDescription),
+            'Mostre este QR de resposta para o tablet que controla.');
+          $('#btnOfSair').classList.remove('hidden');
+          $('#btnOfHost').classList.add('hidden');
+          $('#btnOfGuest').classList.add('hidden');
+        } catch (e) {
+          console.error(e); ofStatus('err', 'QR inválido ou erro ao conectar.');
+        }
+      });
+    }
+
+    $('#btnOfHost').addEventListener('click', offlineHost);
+    $('#btnOfGuest').addEventListener('click', offlineGuest);
+    $('#btnOfLerResp').addEventListener('click', offlineLerResposta);
+    $('#btnOfSair').addEventListener('click', () => encerrarOffline(false));
+
+    /* ----- SCANNER DE CÂMERA (jsQR) ----- */
+    let scanStream = null, scanRAF = null, scanCallback = null;
+    const scanCanvas = document.createElement('canvas');
+    const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+
+    function abrirScanner(callback) {
+      scanCallback = callback;
+      const video = $('#scanVideo');
+      $('#scanner').classList.add('show');
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then((stream) => {
+          scanStream = stream;
+          video.srcObject = stream;
+          video.play();
+          scanLoop();
+        })
+        .catch((e) => {
+          console.error(e);
+          fecharScanner();
+          showModal('Não foi possível acessar a câmera. Verifique a permissão e abra o app por HTTPS.', null);
+        });
+    }
+
+    function scanLoop() {
+      const video = $('#scanVideo');
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        scanCanvas.width = video.videoWidth;
+        scanCanvas.height = video.videoHeight;
+        scanCtx.drawImage(video, 0, 0, scanCanvas.width, scanCanvas.height);
+        const img = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        if (code && code.data) {
+          const descomprimido = LZString.decompressFromEncodedURIComponent(code.data) || code.data;
+          const cb = scanCallback;
+          fecharScanner();
+          if (cb) cb(descomprimido);
+          return;
+        }
+      }
+      scanRAF = requestAnimationFrame(scanLoop);
+    }
+
+    function fecharScanner() {
+      if (scanRAF) cancelAnimationFrame(scanRAF);
+      scanRAF = null; scanCallback = null;
+      if (scanStream) { scanStream.getTracks().forEach((t) => t.stop()); scanStream = null; }
+      $('#scanVideo').srcObject = null;
+      $('#scanner').classList.remove('show');
+    }
+
+    $('#btnScanCancel').addEventListener('click', fecharScanner);
 
     /* ============================================================
        ===== CONTROLE BLUETOOTH: MAPEAMENTO DE BOTÕES =====

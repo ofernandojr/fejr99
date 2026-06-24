@@ -65,6 +65,37 @@ Opção mais simples (deploy automático pelo GitHub):
    - Ajuste fonte/margem/velocidade → sincroniza.
    - Play/pause, velocidade e saltos de bloco no prompter são compartilhados.
 
+## Conexão offline (sem internet)
+
+Dá para sincronizar os dois tablets **sem internet**, ligando um ao outro
+direto pela rede local (mesma Wi-Fi ou pelo **hotspot de um dos tablets** —
+o hotspot não precisa ter internet, só servir de rede entre eles). Usa
+**WebRTC ponto-a-ponto**, com o pareamento inicial feito por **QR Code**.
+
+### Requisito (só na primeira vez, com internet)
+
+O app precisa ser aberto **uma vez com internet** pela URL do Netlify para o
+**Service Worker** guardar tudo em cache (vira PWA). Depois disso, abrir a
+mesma URL funciona offline — e como continua sob HTTPS, a câmera e o WebRTC
+funcionam. Dica: "Adicionar à tela inicial" nos dois tablets.
+
+### Como parear
+
+1. Coloque os dois tablets na mesma Wi-Fi (ou ligue o hotspot de um e conecte
+   o outro nele).
+2. No tablet que vai **controlar**: toque em **Criar conexão (este controla)**.
+   Ele mostra um QR Code.
+3. No tablet de **exibição**: toque em **Entrar (ler QR)** e aponte a câmera
+   para o QR do controle. Ele gera um **QR de resposta**.
+4. No tablet de controle: toque em **Ler QR de resposta** e aponte para o QR
+   do outro. Pronto — aparece "🔗 Conectado".
+
+A partir daí, pauta, ajustes e controles sincronizam direto entre os dois,
+sem nuvem. O pareamento por QR é refeito a cada nova sessão.
+
+> Quando há internet, o modo Firebase (sala) é mais prático e instantâneo;
+> o modo offline é o plano para quando não houver rede.
+
 ## Controle Bluetooth
 
 Na tela de edição há a seção **Controle Bluetooth**. Toque em **Mapear** ao lado
