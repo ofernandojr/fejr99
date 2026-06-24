@@ -100,6 +100,26 @@ tablet que roda o servidor** (não precisa de internet, só a rede entre eles).
 > por ele, o tablet de exibição não precisa de mais nada além de abrir o IP.
 > O campo "Servidor local" também aceita digitar o endereço manualmente.
 
+### Não digitar comando toda vez (atalho de um toque + boot)
+
+Para não rodar `node server.js` manualmente sempre:
+
+1. Instale os apps **Termux:Widget** e **Termux:Boot** (mesma fonte do Termux, ex.: F-Droid).
+2. No Termux, dentro da pasta do projeto, rode **uma vez**:
+   ```sh
+   sh scripts/instalar-atalhos.sh
+   ```
+   Isso cria automaticamente:
+   - **Atalho de um toque:** adicione o widget do Termux:Widget na tela inicial
+     e toque em **"Prompter"** — o servidor sobe na hora.
+   - **Início automático:** o servidor passa a subir sozinho quando o tablet liga
+     (Termux:Boot). Basta abrir o Termux:Boot uma vez após instalar, para ativá-lo.
+3. Deixe o app na tela inicial como **PWA** ("Adicionar à tela inicial").
+
+Os scripts usam `termux-wake-lock` para o servidor não ser suspenso pelo Android.
+Se o projeto não estiver em `~/fejr99`, o instalador detecta o caminho correto
+sozinho (ele usa a pasta onde o projeto está).
+
 ## Conexão offline por QR (alternativa)
 
 Dá para sincronizar os dois tablets **sem internet**, ligando um ao outro
