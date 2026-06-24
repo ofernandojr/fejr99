@@ -26,6 +26,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // Não intercepta os endpoints do servidor local (sincronização SSE/POST).
+  const u = new URL(req.url);
+  if (u.pathname === '/events' || u.pathname === '/update') return;
   // Cache-first para o app; rede como fallback (e atualiza cache quando online).
   e.respondWith(
     caches.match(req).then((cacheado) => {

@@ -65,7 +65,42 @@ Opção mais simples (deploy automático pelo GitHub):
    - Ajuste fonte/margem/velocidade → sincroniza.
    - Play/pause, velocidade e saltos de bloco no prompter são compartilhados.
 
-## Conexão offline (sem internet)
+## Servidor local — offline e automático (recomendado)
+
+Sincroniza os dois tablets **sem internet e sem QR**: um tablet roda um
+servidor (`server.js`), e os dois abrem o endereço dele no navegador. A
+sincronização é automática. Funciona pela mesma Wi-Fi **ou pelo hotspot do
+tablet que roda o servidor** (não precisa de internet, só a rede entre eles).
+
+### Setup no tablet "servidor" (uma vez)
+
+1. Instale o **Termux** (recomendado pela F-Droid).
+2. No Termux:
+   ```sh
+   pkg update && pkg install nodejs git
+   git clone https://github.com/ofernandojr/fejr99.git
+   cd fejr99
+   node server.js
+   ```
+   (Sem git, dá para copiar a pasta do projeto para o tablet e rodar `node server.js` dentro dela.)
+3. O Termux mostra os endereços. Deixe rodando.
+
+### Usar
+
+1. No tablet do servidor, **ligue o hotspot** e conecte o outro tablet nele
+   (ou ponha os dois na mesma Wi-Fi).
+2. Descubra o IP do tablet servidor (no hotspot do Android costuma ser
+   `192.168.43.1`; ou rode `ifconfig` no Termux).
+3. **Tablet servidor:** abra `http://localhost:8080`.
+   **Outro tablet:** abra `http://192.168.43.1:8080` (o IP do servidor).
+4. Pronto — ao abrir pelo servidor, eles conectam **sozinhos** (aparece
+   "🔗 Conectado ao servidor"). Edite num, aparece no outro.
+
+> Dica: deixe o tablet de **controle** rodando o servidor. Como o app é servido
+> por ele, o tablet de exibição não precisa de mais nada além de abrir o IP.
+> O campo "Servidor local" também aceita digitar o endereço manualmente.
+
+## Conexão offline por QR (alternativa)
 
 Dá para sincronizar os dois tablets **sem internet**, ligando um ao outro
 direto pela rede local (mesma Wi-Fi ou pelo **hotspot de um dos tablets** —

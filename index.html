@@ -62,6 +62,15 @@
     #scanGuia { position: absolute; top: 50%; left: 50%; width: 64vw; max-width: 360px; aspect-ratio: 1; transform: translate(-50%, -50%); border: 3px solid #42b72a; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0,0,0,.45); }
     #btnScanCancel { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; min-height: 54px; padding: 14px 28px; background: #f02849; color: #fff; border: none; border-radius: 10px; font-weight: bold; font-size: 17px; }
 
+    /* ===== SERVIDOR LOCAL ===== */
+    #inputSrv { flex: 1 1 58%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; }
+    #btnSrv { flex: 1 1 30%; background: #1a7f37; }
+    #btnSrv.conectado { background: #f02849; }
+    #srvStatus { font-size: 13px; font-weight: 600; color: #777; }
+    #srvStatus.on { color: #1a7f37; }
+    #srvStatus.wait { color: #e68a00; }
+    #srvStatus.err { color: #c0392b; }
+
     .arquivos { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .arquivos button, .link-arq {
       flex: 1 1 auto; min-height: 48px; padding: 12px 14px; background: #E4E6EB;
@@ -239,6 +248,17 @@
         <img id="ofQrImg" alt="QR de conexão">
         <div id="ofQrLegenda"></div>
       </div>
+    </div>
+
+    <!-- ===== SERVIDOR LOCAL (automático, sem QR) ===== -->
+    <div class="offline-box">
+      <span class="of-titulo">Servidor local (automático, sem QR)</span>
+      <p class="of-dica">Um tablet roda o servidor (server.js, via Termux). Ao abrir o endereço do servidor nos dois tablets, eles sincronizam sozinhos. Se você já abriu pelo servidor, a conexão é automática. Passo a passo no README.</p>
+      <div class="of-botoes">
+        <input type="text" id="inputSrv" placeholder="http://192.168.43.1:8080" autocapitalize="none" autocomplete="off">
+        <button id="btnSrv">Conectar</button>
+      </div>
+      <div id="srvStatus">Desconectado.</div>
     </div>
 
     <div class="arquivos">
@@ -708,6 +728,9 @@
     let rtcConectado = false;
     let rtcChannel = null;
 
+    // Estado do servidor local (SSE)
+    let srvBase = null, srvEvents = null, srvConectado = false, srvRecebeuPauta = false;
+
     function setSyncStatus(estado, texto) {
       const el = $('#syncStatus');
       el.classList.remove('on', 'off', 'err');
@@ -716,7 +739,7 @@
     }
 
     function atualizarIndicadorPrompter() {
-      $('#syncIndicador').classList.toggle('hidden', !(conectado || rtcConectado));
+      $('#syncIndicador').classList.toggle('hidden', !(conectado || rtcConectado || srvConectado));
     }
 
     // ----- ESCRITAS (deste dispositivo para os outros) -----
@@ -726,6 +749,7 @@
       if (aplicandoRemoto) return;
       if (salaRef) salaRef.child('pauta').set(Pauta);
       enviarRTC('pauta', Pauta);
+      enviarSrv('pauta', Pauta);
     }
     function pushSettings() {
       if (aplicandoRemoto) return;
@@ -735,6 +759,7 @@
       };
       if (salaRef) salaRef.child('settings').set(s);
       enviarRTC('settings', s);
+      enviarSrv('settings', s);
     }
     // bumpGen = true quando a posição mudou (play, salto, voltar) e precisa realinhar os outros
     function pushLive(bumpGen) {
@@ -750,6 +775,7 @@
       };
       if (salaRef) salaRef.child('live').set(payload);
       enviarRTC('live', payload);
+      enviarSrv('live', payload);
     }
 
     // ----- LEITURAS (do banco para este dispositivo) -----
@@ -1097,6 +1123,101 @@
     }
 
     $('#btnScanCancel').addEventListener('click', fecharScanner);
+
+    /* ============================================================
+       ===== SERVIDOR LOCAL (SINCRONIZAÇÃO VIA SSE) =====
+       ============================================================
+       Cliente do servidor server.js: recebe atualizações por SSE
+       (/events) e envia mudanças por POST (/update). Sem QR, sem
+       câmera, sem internet — só a rede local entre os tablets.
+    */
+    function setSrvStatus(estado, texto) {
+      const el = $('#srvStatus');
+      el.classList.remove('on', 'wait', 'err');
+      if (estado) el.classList.add(estado);
+      el.textContent = texto;
+    }
+
+    function enviarSrv(kind, data) {
+      if (!srvBase) return;
+      fetch(srvBase + '/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: kind, data: data, by: CLIENT_ID })
+      }).catch(() => {});
+    }
+
+    function desconectarServidor() {
+      if (srvEvents) { try { srvEvents.close(); } catch (e) {} }
+      srvEvents = null; srvBase = null; srvConectado = false; srvRecebeuPauta = false;
+      atualizarIndicadorPrompter();
+      $('#btnSrv').textContent = 'Conectar';
+      $('#btnSrv').classList.remove('conectado');
+      setSrvStatus('', 'Desconectado.');
+    }
+
+    function conectarServidor(base) {
+      desconectarServidor();
+      srvBase = String(base || '').trim().replace(/\/+$/, '');
+      if (!srvBase) { setSrvStatus('err', 'Informe o endereço do servidor.'); return; }
+      setSrvStatus('wait', 'Conectando…');
+      try {
+        srvEvents = new EventSource(srvBase + '/events');
+      } catch (e) {
+        setSrvStatus('err', 'Endereço inválido.'); srvBase = null; return;
+      }
+
+      srvEvents.onopen = () => {
+        srvConectado = true;
+        setSrvStatus('on', '🔗 Conectado ao servidor.');
+        atualizarIndicadorPrompter();
+        $('#btnSrv').textContent = 'Desconectar';
+        $('#btnSrv').classList.add('conectado');
+        localStorage.setItem('tvweb_srv', srvBase);
+        // Se o servidor estiver vazio e este tablet já tiver pauta, semeia o estado.
+        setTimeout(() => {
+          if (srvConectado && !srvRecebeuPauta && Pauta.length) {
+            enviarSrv('pauta', Pauta);
+            enviarSrv('settings', {
+              fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
+              espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
+            });
+          }
+        }, 800);
+      };
+
+      srvEvents.onerror = () => {
+        if (srvConectado) setSrvStatus('err', 'Conexão perdida. Tentando reconectar…');
+        else setSrvStatus('err', 'Não foi possível conectar ao servidor.');
+        srvConectado = false;
+        atualizarIndicadorPrompter();
+      };
+
+      srvEvents.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.by === CLIENT_ID) return; // ignora o próprio eco
+        if (msg.kind === 'pauta') { srvRecebeuPauta = true; aplicarPautaRemota(msg.data); }
+        else if (msg.kind === 'settings') aplicarSettingsRemoto(msg.data);
+        else if (msg.kind === 'live') aplicarLiveRemoto(msg.data);
+      };
+    }
+
+    $('#btnSrv').addEventListener('click', () => {
+      if (srvConectado || srvBase) desconectarServidor();
+      else conectarServidor($('#inputSrv').value);
+    });
+
+    // Pré-preenche e conecta automaticamente quando o app é aberto PELO servidor
+    // (servido por http://, diferente do Netlify que é https).
+    (function iniciarServidor() {
+      const salvo = localStorage.getItem('tvweb_srv');
+      if (salvo) $('#inputSrv').value = salvo;
+      if (location.protocol === 'http:' && location.hostname) {
+        $('#inputSrv').value = location.origin;
+        conectarServidor(location.origin); // automático
+      }
+    })();
 
     /* ============================================================
        ===== CONTROLE BLUETOOTH: MAPEAMENTO DE BOTÕES =====
