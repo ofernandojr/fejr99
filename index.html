@@ -65,6 +65,20 @@
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #1877F2; cursor: pointer; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
     input[type=range]::-moz-range-thumb { width: 32px; height: 32px; border-radius: 50%; background: #1877F2; cursor: pointer; border: 3px solid #fff; }
 
+    /* Mapeamento de controle Bluetooth */
+    .mapeamento { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .mapeamento .map-titulo { font-weight: bold; font-size: 16px; margin: 0 0 4px; }
+    .mapeamento .map-dica { font-size: 12px; color: #888; margin: 0 0 6px; }
+    #padStatus { font-size: 12px; font-weight: 600; color: #777; margin: 0 0 12px; }
+    #padStatus.on { color: #1a7f37; }
+    .map-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #eee; }
+    .map-item:first-of-type { border-top: none; }
+    .map-item .map-nome { flex: 1; font-size: 15px; }
+    .map-item .map-bind { min-width: 96px; text-align: center; font-size: 13px; font-weight: bold; color: #1877F2; background: #eef3ff; border-radius: 6px; padding: 7px 8px; }
+    .map-item .map-bind.aguardando { color: #e68a00; background: #fff4e5; }
+    .map-item button { min-height: 42px; padding: 0 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; color: #fff; background: #888; }
+    .map-item button.b-map { background: #1877F2; }
+
     .btn-iniciar {
       width: 100%; min-height: 70px; padding: 20px; font-size: 21px; font-weight: bold;
       color: #fff; background: #42b72a; border: none; border-radius: 10px; cursor: pointer;
@@ -198,6 +212,13 @@
       <label><span class="nome">Velocidade</span> <input type="range" id="rngVel" min="0.1" max="10" step="0.1" value="1.5"><span class="valor" id="valVel">1.5</span></label>
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto</label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar controles (Modo Apresentador)</label>
+    </div>
+
+    <div class="mapeamento">
+      <p class="map-titulo">Controle Bluetooth</p>
+      <p class="map-dica">Toque em "Mapear" e pressione o botão desejado no controle. Funciona com apresentadores/remotos (que enviam teclas) e com gamepads.</p>
+      <p id="padStatus">Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).</p>
+      <div id="listaMapeamento"></div>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
@@ -499,6 +520,7 @@
 
     function loop() {
       if (scrollState.playing) { scrollState.offset += Settings.velocidade; aplicarOffset(); }
+      pollGamepad();
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
@@ -758,18 +780,167 @@
       setSyncStatus('off', 'Firebase não configurado');
     }
 
-    /* ===== ATALHOS DE TECLADO / CONTROLE BLUETOOTH ===== */
-    document.addEventListener('keydown', (e) => {
-      // Atalhos de uso do teleprompter (só ativam se o prompter estiver aberto)
-      if (prompterEl.classList.contains('hidden')) return;
+    /* ============================================================
+       ===== CONTROLE BLUETOOTH: MAPEAMENTO DE BOTÕES =====
+       ============================================================
+       Cada ação pode ser ligada a uma tecla (apresentadores/remotos
+       que enviam teclado) OU a um botão de gamepad (Gamepad API).
+       O mapeamento fica salvo no navegador (localStorage).
+    */
+    const ACOES = [
+      { id: 'play',     nome: 'Play / Pausar' },
+      { id: 'up',       nome: 'Aumentar velocidade' },
+      { id: 'down',     nome: 'Diminuir velocidade' },
+      { id: 'next',     nome: 'Próximo bloco' },
+      { id: 'prev',     nome: 'Bloco anterior' },
+      { id: 'blackout', nome: 'Tela preta (blackout)' }
+    ];
 
-      if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); togglePlay(); }
-      else if (e.code === 'ArrowUp')    { e.preventDefault(); ajustarVelocidade(0.1); }
-      else if (e.code === 'ArrowDown')  { e.preventDefault(); ajustarVelocidade(-0.1); }
-      else if (e.code === 'ArrowRight') { e.preventDefault(); pularBloco(1); }
-      else if (e.code === 'ArrowLeft')  { e.preventDefault(); pularBloco(-1); }
-      else if (e.code === 'Escape')     { e.preventDefault(); toggleBlackout(); }
+    // Mapeamento padrão (teclado) — já funciona antes de remapear
+    const KeyMapPadrao = {
+      play:     { type: 'key', code: 'Space',      label: 'Espaço' },
+      up:       { type: 'key', code: 'ArrowUp',    label: 'Seta Cima' },
+      down:     { type: 'key', code: 'ArrowDown',  label: 'Seta Baixo' },
+      next:     { type: 'key', code: 'ArrowRight', label: 'Seta Direita' },
+      prev:     { type: 'key', code: 'ArrowLeft',  label: 'Seta Esquerda' },
+      blackout: { type: 'key', code: 'Escape',     label: 'Esc' }
+    };
+
+    let KeyMap = JSON.parse(JSON.stringify(KeyMapPadrao));
+    let actionToMap = null; // ação aguardando captura de botão
+
+    try {
+      const salvo = localStorage.getItem('tvweb_keymap');
+      if (salvo) KeyMap = Object.assign({}, KeyMapPadrao, JSON.parse(salvo));
+    } catch (e) {}
+
+    function salvarKeyMap() { localStorage.setItem('tvweb_keymap', JSON.stringify(KeyMap)); }
+
+    function cancelarMapeamento() { actionToMap = null; renderMapeamento(); }
+
+    function renderMapeamento() {
+      const cont = $('#listaMapeamento');
+      cont.innerHTML = '';
+      ACOES.forEach(acao => {
+        const bind = KeyMap[acao.id];
+        const item = document.createElement('div');
+        item.className = 'map-item';
+
+        const nome = document.createElement('span');
+        nome.className = 'map-nome';
+        nome.textContent = acao.nome;
+
+        const bindEl = document.createElement('span');
+        bindEl.className = 'map-bind';
+        if (actionToMap === acao.id) {
+          bindEl.classList.add('aguardando');
+          bindEl.textContent = 'Pressione…';
+        } else {
+          bindEl.textContent = bind ? bind.label : '—';
+        }
+
+        const btnMap = document.createElement('button');
+        btnMap.className = 'b-map';
+        btnMap.textContent = (actionToMap === acao.id) ? 'Cancelar' : 'Mapear';
+        btnMap.onclick = () => {
+          if (actionToMap === acao.id) { cancelarMapeamento(); }
+          else { actionToMap = acao.id; renderMapeamento(); }
+        };
+
+        const btnClr = document.createElement('button');
+        btnClr.textContent = '✕';
+        btnClr.title = 'Remover';
+        btnClr.onclick = () => { delete KeyMap[acao.id]; salvarKeyMap(); cancelarMapeamento(); };
+
+        item.appendChild(nome);
+        item.appendChild(bindEl);
+        item.appendChild(btnMap);
+        item.appendChild(btnClr);
+        cont.appendChild(item);
+      });
+    }
+    renderMapeamento();
+
+    // Dispara a ação correspondente
+    function dispararAcao(id) {
+      switch (id) {
+        case 'play':     togglePlay(); break;
+        case 'up':       ajustarVelocidade(0.1); break;
+        case 'down':     ajustarVelocidade(-0.1); break;
+        case 'next':     pularBloco(1); break;
+        case 'prev':     pularBloco(-1); break;
+        case 'blackout': toggleBlackout(); break;
+      }
+    }
+
+    function acaoPorBotao(predicate) {
+      for (const id in KeyMap) {
+        if (KeyMap[id] && predicate(KeyMap[id])) return id;
+      }
+      return null;
+    }
+
+    /* ----- Captura por TECLADO (apresentadores/remotos BT) ----- */
+    document.addEventListener('keydown', (e) => {
+      if (actionToMap) {
+        e.preventDefault();
+        let label = e.key;
+        if (label === ' ') label = 'Espaço';
+        if (e.code.startsWith('Arrow')) label = 'Seta ' + e.code.replace('Arrow', '');
+        else if (e.code === 'Enter') label = 'Enter';
+        else if (e.code === 'Escape') label = 'Esc';
+        else if (label.length === 1) label = label.toUpperCase();
+        KeyMap[actionToMap] = { type: 'key', code: e.code, label: label };
+        salvarKeyMap();
+        cancelarMapeamento();
+        return;
+      }
+      if (prompterEl.classList.contains('hidden')) return;
+      const id = acaoPorBotao(m => m.type === 'key' && m.code === e.code);
+      if (id) { e.preventDefault(); dispararAcao(id); }
     });
+
+    /* ----- Captura por GAMEPAD (Gamepad API) ----- */
+    const padPrev = {};
+    let padDetectado = false;
+
+    function onPadPress(index) {
+      if (actionToMap) {
+        KeyMap[actionToMap] = { type: 'pad', index: index, label: 'Botão ' + index };
+        salvarKeyMap();
+        cancelarMapeamento();
+        return;
+      }
+      if (prompterEl.classList.contains('hidden')) return;
+      const id = acaoPorBotao(m => m.type === 'pad' && m.index === index);
+      if (id) dispararAcao(id);
+    }
+
+    function pollGamepad() {
+      if (!navigator.getGamepads) return;
+      const pads = navigator.getGamepads();
+      let algum = false;
+      for (const pad of pads) {
+        if (!pad) continue;
+        algum = true;
+        pad.buttons.forEach((btn, idx) => {
+          const key = pad.index + ':' + idx;
+          const pressed = btn.pressed || btn.value > 0.5;
+          if (pressed && !padPrev[key]) onPadPress(idx);
+          padPrev[key] = pressed;
+        });
+      }
+      if (algum !== padDetectado) {
+        padDetectado = algum;
+        const el = $('#padStatus');
+        el.classList.toggle('on', algum);
+        el.textContent = algum
+          ? '🎮 Gamepad conectado.'
+          : 'Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).';
+      }
+    }
+
+    window.addEventListener('gamepadconnected', () => { /* detectado no próximo poll */ });
   </script>
 </body>
 </html>

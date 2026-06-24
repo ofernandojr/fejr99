@@ -65,6 +65,18 @@ Opção mais simples (deploy automático pelo GitHub):
    - Ajuste fonte/margem/velocidade → sincroniza.
    - Play/pause, velocidade e saltos de bloco no prompter são compartilhados.
 
+## Controle Bluetooth
+
+Na tela de edição há a seção **Controle Bluetooth**. Toque em **Mapear** ao lado
+da ação desejada (play, velocidade, blocos, blackout) e pressione o botão no
+controle. Funciona com:
+
+- **Apresentadores/remotos** que enviam teclas (mais comum) — capturado como tecla.
+- **Gamepads** — capturado pela Gamepad API (aparece "🎮 Gamepad conectado").
+
+O mapeamento fica salvo no próprio tablet. Já vem com um padrão de teclado
+(Espaço = play, setas = velocidade/blocos, Esc = blackout).
+
 ## Segurança (opcional, recomendado depois)
 
 As regras abertas (`.read/.write: true`) servem para testes. Para uso real,
