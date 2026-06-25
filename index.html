@@ -9,219 +9,302 @@
   <link rel="manifest" href="manifest.json">
   <title>TVWEB Prompter</title>
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; }
-    body { background: #F0F2F5; color: #1C1E21; font-size: 16px; }
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+    body { background: #F0F2F5; color: #1C1E21; font-size: 16px; -webkit-font-smoothing: antialiased; }
     .hidden { display: none !important; }
-    button, input, textarea { font-family: inherit; }
+    button, input, textarea, select { font-family: inherit; }
 
-    /* ===== EDITOR ===== */
-    #editor { max-width: 860px; margin: 0 auto; padding: 16px; padding-bottom: 40px; }
-    .credito { text-align: right; color: #c9c9c9; font-size: 12px; margin: 0 0 6px; }
-    h1.titulo { font-size: 24px; margin: 0 0 14px; }
-    .sub { font-size: 16px; margin: 14px 0 6px; font-weight: bold; }
+    /* ── Variáveis de espaçamento (respeitam notch/Dynamic Island) ── */
+    :root {
+      --safe-top:    env(safe-area-inset-top,    0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left:   env(safe-area-inset-left,   0px);
+      --safe-right:  env(safe-area-inset-right,  0px);
+      --pad: 14px;
+      --radius: 14px;
+      --card-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
 
-    /* ===== LISTA DE PAUTA ===== */
-    #listaPauta { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 8px; }
-    #listaPauta li { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; }
-    #listaPauta li .texto { flex: 1; font-size: 15px; word-break: break-word; }
-    #listaPauta li button { min-width: 38px; min-height: 38px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; color: #fff; font-weight: bold; }
-    #listaPauta li .b-up, #listaPauta li .b-down { background: #888; }
+    /* ── Editor ── */
+    #editor {
+      max-width: 860px; margin: 0 auto;
+      padding: var(--pad);
+      padding-left:  calc(var(--pad) + var(--safe-left));
+      padding-right: calc(var(--pad) + var(--safe-right));
+      padding-bottom: calc(32px + var(--safe-bottom));
+    }
+    .credito { text-align: right; color: #bbb; font-size: 11px; margin: 0 0 4px; }
+    h1.titulo { font-size: 22px; font-weight: 800; margin: 0 0 12px; letter-spacing: -.3px; }
+    .sub { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #888; font-weight: 700; margin: 18px 0 8px; }
+
+    /* ── Card genérico ── */
+    .card {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--card-shadow); margin-bottom: 12px; overflow: hidden;
+    }
+    .card-titulo { font-weight: 700; font-size: 15px; color: #1C1E21; }
+    .card-dica   { font-size: 12px; color: #999; margin: 3px 0 0; line-height: 1.4; }
+
+    /* ── Lista de pauta ── */
+    #listaPauta { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
+    #listaPauta li {
+      display: flex; align-items: center; gap: 6px;
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--card-shadow); padding: 11px 12px;
+    }
+    #listaPauta li .texto { flex: 1; font-size: 14px; word-break: break-word; line-height: 1.4; }
+    #listaPauta li button { min-width: 40px; min-height: 40px; border: none; border-radius: 9px; font-size: 15px; cursor: pointer; color: #fff; font-weight: bold; }
+    #listaPauta li .b-up, #listaPauta li .b-down { background: #aaa; }
     #listaPauta li .b-edit { background: #1877F2; }
-    #listaPauta li .b-del { background: #f02849; }
+    #listaPauta li .b-del  { background: #f02849; }
 
-    /* ===== SINCRONIZAÇÃO (SALA REMOTA) ===== */
-    .sync-box { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
-    .sync-box .sync-head { display: flex; align-items: center; gap: 10px; }
-    .sync-box .sync-titulo { font-weight: bold; font-size: 16px; flex: 1; }
-    .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 5px 10px; border-radius: 20px; }
-    .sync-status .dot { width: 10px; height: 10px; border-radius: 50%; background: #aaa; }
-    .sync-status.on  { background: #e6f7ea; color: #1a7f37; } .sync-status.on .dot  { background: #1a7f37; }
-    .sync-status.off { background: #f1f1f1; color: #777; }   .sync-status.off .dot { background: #aaa; }
+    /* ── Sincronização (status interno) ── */
+    .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .sync-status .dot { width: 8px; height: 8px; border-radius: 50%; background: #aaa; }
+    .sync-status.on  { background: #e6f7ea; color: #1a7f37; } .sync-status.on  .dot { background: #1a7f37; }
+    .sync-status.off { background: #f1f1f1; color: #888;    } .sync-status.off .dot { background: #aaa;    }
     .sync-status.err { background: #fdeaea; color: #c0392b; } .sync-status.err .dot { background: #c0392b; }
     .sync-row { display: flex; gap: 8px; }
-    #inputSala { flex: 1; min-height: 48px; padding: 10px 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; }
-    #btnConectar { min-height: 48px; padding: 0 18px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; color: #fff; background: #1877F2; cursor: pointer; }
+    #inputSala { flex: 1; min-height: 48px; padding: 0 12px; border: 1.5px solid #dde; border-radius: 10px; font-size: 16px; }
+    #btnConectar { min-height: 48px; padding: 0 18px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; color: #fff; background: #1877F2; cursor: pointer; }
     #btnConectar.conectado { background: #f02849; }
-    .sync-dica { font-size: 12px; color: #888; margin: 0; }
+    .sync-dica { font-size: 12px; color: #999; margin: 0; }
 
-    /* ===== MODO OFFLINE (QR de acesso + Servidor) ===== */
-    .offline-box { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
-    .offline-box .of-titulo { font-weight: bold; font-size: 16px; }
-    .offline-box .of-dica { font-size: 12px; color: #888; margin: 0; }
+    /* ── Offline / QR / Servidor ── */
+    .offline-box { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+    .offline-box .of-titulo { font-weight: 700; font-size: 15px; }
+    .offline-box .of-dica   { font-size: 12px; color: #999; margin: 0; line-height: 1.4; }
     .of-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
-    .of-botoes button { flex: 1 1 auto; min-height: 48px; padding: 10px 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; color: #fff; cursor: pointer; }
-    #btnGerarQr { background: #1877F2; }
-    #btnSrv { flex: 1 1 30%; background: #1a7f37; }
+    .of-botoes button {
+      flex: 1 1 auto; min-height: 50px; padding: 0 14px; border: none;
+      border-radius: 11px; font-weight: 700; font-size: 15px; color: #fff; cursor: pointer;
+    }
+    #btnGerarQr  { background: #1877F2; }
+    #btnSrv      { flex: 1 1 30%; background: #1a7f37; }
     #btnSrv.conectado { background: #f02849; }
-    #srvStatus { font-size: 13px; font-weight: 600; color: #777; }
-    #srvStatus.on { color: #1a7f37; }
+    #srvStatus   { font-size: 13px; font-weight: 600; color: #888; }
+    #srvStatus.on   { color: #1a7f37; }
     #srvStatus.wait { color: #e68a00; }
-    #srvStatus.err { color: #c0392b; }
-    #qrAcesso { display: none; flex-direction: column; align-items: center; gap: 8px; padding: 10px; background: #fafafa; border: 1px dashed #ccc; border-radius: 8px; }
+    #srvStatus.err  { color: #c0392b; }
+    #qrAcesso { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 12px; background: #f7f7f7; border-radius: 10px; }
     #qrAcesso.show { display: flex; }
-    #qrAcessoImg { max-width: min(92vw, 380px); height: auto; image-rendering: pixelated; background: #fff; padding: 8px; }
-    #qrAcessoUrl { font-size: 13px; color: #1877F2; font-weight: bold; word-break: break-all; text-align: center; }
-    #inputSrv { flex: 1 1 58%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; }
+    #qrAcessoImg { max-width: min(88vw, 340px); height: auto; image-rendering: pixelated; background: #fff; border-radius: 8px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    #qrAcessoUrl { font-size: 12px; color: #1877F2; font-weight: 700; word-break: break-all; text-align: center; }
+    #inputSrv { flex: 1 1 55%; min-width: 0; min-height: 48px; padding: 0 12px; border: 1.5px solid #dde; border-radius: 10px; font-size: 15px; }
 
-    /* ===== CONTROLE BLUETOOTH (cascata/accordion) ===== */
-    .mapeamento { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+    /* ── Bluetooth accordion ── */
+    .mapeamento { background: #fff; border-radius: var(--radius); box-shadow: var(--card-shadow); margin-bottom: 12px; overflow: hidden; }
     .map-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; user-select: none; }
     .map-header-left { display: flex; flex-direction: column; gap: 2px; }
-    .mapeamento .map-titulo { font-weight: bold; font-size: 16px; margin: 0; }
-    .mapeamento .map-dica { font-size: 12px; color: #888; margin: 0; }
-    .map-arrow { font-size: 18px; color: #888; transition: transform .2s; }
+    .mapeamento .map-titulo { font-weight: 700; font-size: 15px; margin: 0; }
+    .mapeamento .map-dica   { font-size: 12px; color: #999; margin: 2px 0 0; }
+    .map-arrow { font-size: 16px; color: #aaa; transition: transform .2s; }
     .map-arrow.aberto { transform: rotate(180deg); }
-    .map-body { padding: 0 16px 16px; display: none; }
+    .map-body { padding: 0 16px 14px; display: none; }
     .map-body.aberto { display: block; }
-    #selGamepad { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; margin-bottom: 12px; background: #f9f9f9; }
-    #padStatus { font-size: 12px; font-weight: 600; color: #777; margin: 0 0 12px; }
+    #selGamepad { width: 100%; min-height: 46px; padding: 0 10px; border: 1.5px solid #dde; border-radius: 10px; font-size: 14px; margin-bottom: 10px; background: #f9f9f9; }
+    #padStatus { font-size: 12px; font-weight: 600; color: #999; margin: 0 0 10px; }
     #padStatus.on { color: #1a7f37; }
-    .map-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid #eee; }
+    .map-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid #f0f0f0; }
     .map-item:first-of-type { border-top: none; }
-    .map-item .map-nome { flex: 1; font-size: 15px; }
-    .map-item .map-bind { min-width: 96px; text-align: center; font-size: 13px; font-weight: bold; color: #1877F2; background: #eef3ff; border-radius: 6px; padding: 7px 8px; }
+    .map-item .map-nome  { flex: 1; font-size: 14px; }
+    .map-item .map-bind  { min-width: 88px; text-align: center; font-size: 12px; font-weight: 700; color: #1877F2; background: #eef3ff; border-radius: 8px; padding: 7px 8px; }
     .map-item .map-bind.aguardando { color: #e68a00; background: #fff4e5; }
-    .map-item button { min-height: 42px; padding: 0 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; color: #fff; background: #888; }
+    .map-item button { min-height: 40px; padding: 0 13px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; color: #fff; background: #aaa; }
     .map-item button.b-map { background: #1877F2; }
 
-    /* ===== ARQUIVOS (importar / salvar) ===== */
-    .arquivos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    /* ── Arquivos ── */
+    .arquivos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
     .arquivos button, .link-arq {
-      flex: 1 1 auto; min-height: 48px; padding: 10px 14px; border: none;
-      border-radius: 8px; background: #E4E6EB; color: #1C1E21; font-weight: bold;
-      font-size: 15px; cursor: pointer; text-align: center;
+      flex: 1 1 auto; min-height: 48px; padding: 0 14px; border: none;
+      border-radius: 11px; background: #E4E6EB; color: #1C1E21;
+      font-weight: 700; font-size: 14px; cursor: pointer; text-align: center;
     }
     .link-arq { display: flex; align-items: center; justify-content: center; }
-    .arquivos button:hover, .link-arq:hover { background: #d2d4d8; }
+    .arquivos button:active, .link-arq:active { background: #d0d2d6; }
 
-    /* ===== ADICIONAR BLOCO ===== */
-    .add-box { display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
-    #txtNovo { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; resize: vertical; }
-    #btnAdd { min-height: 48px; padding: 10px; border: none; border-radius: 8px; background: #1877F2; color: #fff; font-weight: bold; font-size: 16px; cursor: pointer; }
+    /* ── Adicionar bloco ── */
+    .add-box { display: flex; flex-direction: column; gap: 8px; background: #fff; border-radius: var(--radius); box-shadow: var(--card-shadow); padding: 14px; margin-bottom: 12px; }
+    #txtNovo { width: 100%; min-height: 110px; padding: 10px 12px; border: 1.5px solid #dde; border-radius: 10px; font-size: 15px; resize: vertical; line-height: 1.5; }
+    #txtNovo:focus { outline: none; border-color: #1877F2; }
+    #btnAdd { min-height: 50px; border: none; border-radius: 11px; background: #1877F2; color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; }
 
-    /* ===== AJUSTES (fonte, margem, velocidade) ===== */
-    .ajustes { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
-    .ajustes label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
-    .ajustes label > span.nome { min-width: 96px; font-weight: 600; }
-    .ajustes input[type=range] { flex: 1; }
-    .ajustes .valor { min-width: 36px; text-align: right; font-weight: bold; color: #1877F2; }
-    .ajustes label.chk { gap: 10px; font-size: 14px; color: #444; }
-    .ajustes label.chk input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+    /* ── Ajustes ── */
+    .ajustes { display: flex; flex-direction: column; gap: 0; background: #fff; border-radius: var(--radius); box-shadow: var(--card-shadow); margin-bottom: 12px; overflow: hidden; }
+    .ajustes label { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+    .ajustes label:last-child { border-bottom: none; }
+    .ajustes label > span.nome { min-width: 88px; font-weight: 700; color: #333; }
+    .ajustes input[type=range] { flex: 1; accent-color: #1877F2; }
+    .ajustes .valor { min-width: 40px; text-align: right; font-weight: 700; color: #1877F2; font-size: 15px; font-variant-numeric: tabular-nums; }
+    .ajustes label.chk { gap: 12px; font-size: 14px; color: #444; }
+    .ajustes label.chk input[type=checkbox] { width: 20px; height: 20px; accent-color: #1877F2; cursor: pointer; flex-shrink: 0; }
 
+    /* ── Botão iniciar ── */
     .btn-iniciar {
-      width: 100%; min-height: 70px; padding: 20px; font-size: 21px; font-weight: bold;
-      color: #fff; background: #42b72a; border: none; border-radius: 10px; cursor: pointer;
+      width: 100%; min-height: 64px; font-size: 19px; font-weight: 800;
+      color: #fff; background: #42b72a; border: none;
+      border-radius: var(--radius); cursor: pointer; letter-spacing: .3px;
+      box-shadow: 0 4px 14px rgba(66,183,42,.35);
     }
+    .btn-iniciar:active { background: #369622; }
 
-    /* ===== SELETOR DE PAPEL ===== */
-    #papelBox { display: flex; gap: 10px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 200; }
-    .papel-btn { flex: 1; min-height: 52px; border: 2px solid #ddd; border-radius: 10px; background: #f5f5f5; font-size: 15px; font-weight: bold; cursor: pointer; color: #555; transition: all .15s; }
+    /* ── Seletor de papel ── */
+    #papelBox {
+      display: flex; gap: 8px; padding: 10px 14px;
+      padding-top:  calc(10px + var(--safe-top));
+      padding-left: calc(14px + var(--safe-left));
+      padding-right: calc(14px + var(--safe-right));
+      background: #fff; border-bottom: 1px solid #eee;
+      position: sticky; top: 0; z-index: 200;
+    }
+    .papel-btn {
+      flex: 1; min-height: 46px; border: 2px solid #e0e0e0; border-radius: 11px;
+      background: #f7f7f7; font-size: 14px; font-weight: 700; cursor: pointer;
+      color: #666; transition: all .15s;
+    }
     .papel-btn.ativo { border-color: #1877F2; background: #eef3ff; color: #1877F2; }
 
-    /* ===== PAINEL CONTROLE REMOTO ===== */
-    #painelControle { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: flex; flex-direction: column; padding: 16px; gap: 12px; user-select: none; -webkit-user-select: none; }
-    .rc-status { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,.07); border-radius: 10px; }
-    #rcVoltar { background: #444; border: none; border-radius: 8px; color: #fff; font-weight: bold; font-size: 14px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
-    .rc-sync { font-size: 14px; font-weight: bold; color: #aaa; flex: 1; text-align: center; }
+    /* ── Painel Controle Remoto ── */
+    #painelControle {
+      position: fixed; inset: 0; background: #0f0f1a; z-index: 500;
+      display: flex; flex-direction: column;
+      padding: 14px;
+      padding-top:    calc(14px + var(--safe-top));
+      padding-bottom: calc(14px + var(--safe-bottom));
+      padding-left:   calc(14px + var(--safe-left));
+      padding-right:  calc(14px + var(--safe-right));
+      gap: 10px; user-select: none; -webkit-user-select: none;
+    }
+    .rc-status { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,.07); border-radius: 12px; flex-shrink: 0; }
+    #rcVoltar { background: #333; border: none; border-radius: 9px; color: #fff; font-weight: 700; font-size: 14px; padding: 9px 16px; cursor: pointer; white-space: nowrap; }
+    .rc-sync { font-size: 13px; font-weight: 700; color: #888; flex: 1; text-align: center; }
     .rc-sync.on { color: #42b72a; }
-    .rc-vel { font-size: 22px; font-weight: bold; color: #fff; font-variant-numeric: tabular-nums; }
-    #rcPlay { width: 100%; flex: 1; background: #42b72a; border: none; border-radius: 16px; color: #fff; font-size: 48px; font-weight: bold; cursor: pointer; min-height: 160px; }
-    #rcPlay.parar { background: #f02849; }
-    .rc-row { display: flex; gap: 12px; }
-    .rc-row button { flex: 1; min-height: 110px; border: none; border-radius: 14px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .rc-vel { font-size: 20px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+    #rcPlay { width: 100%; flex: 2; background: #42b72a; border: none; border-radius: 18px; color: #fff; font-size: clamp(36px, 8vw, 60px); font-weight: 800; cursor: pointer; min-height: 120px; box-shadow: 0 6px 20px rgba(66,183,42,.4); }
+    #rcPlay.parar { background: #f02849; box-shadow: 0 6px 20px rgba(240,40,73,.4); }
+    .rc-row { display: flex; gap: 10px; flex: 1; min-height: 0; }
+    .rc-row button { flex: 1; border: none; border-radius: 16px; color: #fff; font-size: clamp(20px, 5vw, 30px); font-weight: 800; cursor: pointer; min-height: 80px; }
     #rcPrev, #rcNext { background: #1877F2; }
-    #rcVelDown { background: #FF9800; }
-    #rcVelUp { background: #9C27B0; }
-    #rcBlackout { width: 100%; min-height: 72px; background: #2b2b2b; border: 2px solid #555; border-radius: 14px; color: #fff; font-size: 24px; font-weight: bold; cursor: pointer; }
-    #rcBlackout.ativo { background: #111; border-color: #f02849; color: #f02849; }
+    #rcVelDown { background: #e68a00; }
+    #rcVelUp   { background: #9C27B0; }
+    #rcBlackout { width: 100%; flex-shrink: 0; min-height: 62px; background: #222; border: 2px solid #444; border-radius: 14px; color: #fff; font-size: 20px; font-weight: 700; cursor: pointer; }
+    #rcBlackout.ativo { background: #0a0a0a; border-color: #f02849; color: #f02849; }
 
-    /* ===== PROMPTER ===== */
-    #prompter { position: fixed; inset: 0; background: #000; z-index: 1000; overflow: hidden; }
+    /* ── Prompter ── */
+    #prompter { position: fixed; inset: 0; background: #000; z-index: 1000; overflow: hidden; touch-action: none; }
     #prompter, .prom-controles, .crono, .btn-voltar { user-select: none; -webkit-user-select: none; }
-    #prompter { touch-action: none; }
 
     #promViewport { position: absolute; inset: 0; }
     #promTrack { position: absolute; top: 0; left: 0; width: 100%; padding-top: 42vh; will-change: transform; }
     #promTrack .block {
-      color: #fff; font-family: Arial, sans-serif; font-weight: bold;
+      color: #fff; font-family: Arial, Helvetica, sans-serif; font-weight: bold;
       text-align: center; white-space: pre-wrap; word-break: break-word;
       margin: 0 auto 60vh; line-height: 1.25;
     }
     .espelhado #promViewport { transform: scaleX(-1); }
-    .prom-aviso { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); text-align: center; color: #fff; font-size: 22px; padding: 0 24px; }
+    .prom-aviso { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); text-align: center; color: #fff; font-size: 20px; padding: 0 24px; }
 
     .btn-voltar {
-      position: fixed; top: 12px; left: 12px; z-index: 1002;
-      min-height: 50px; padding: 12px 18px; background: #555; color: #fff; border: none;
-      border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; opacity: 0.85;
+      position: fixed; z-index: 1002;
+      top: calc(12px + var(--safe-top));
+      left: calc(12px + var(--safe-left));
+      min-height: 48px; padding: 0 16px;
+      background: rgba(60,60,60,.85); color: #fff; border: none;
+      border-radius: 24px; font-weight: 700; font-size: 15px; cursor: pointer;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     }
 
-    /* Indicador de sincronização no prompter */
-    #syncIndicador { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1002;
-      font-size: 13px; font-weight: bold; color: #42b72a; background: rgba(0,0,0,.45);
-      padding: 6px 12px; border-radius: 20px; opacity: 0.85; pointer-events: none; }
+    #syncIndicador {
+      position: fixed; top: calc(12px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+      z-index: 1002; font-size: 12px; font-weight: 700; color: #42b72a;
+      background: rgba(0,0,0,.5); padding: 6px 14px; border-radius: 20px;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); pointer-events: none;
+    }
 
-    /* Toast de velocidade */
     #speedToast {
-      position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-      background: rgba(24, 119, 242, 0.9); color: #fff; padding: 12px 24px;
-      border-radius: 8px; font-size: 24px; font-weight: bold; z-index: 1005;
-      transition: opacity 0.3s ease; pointer-events: none;
+      position: fixed; top: calc(72px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+      background: rgba(24,119,242,.92); color: #fff; padding: 10px 22px;
+      border-radius: 10px; font-size: 22px; font-weight: 700; z-index: 1005;
+      transition: opacity .3s; pointer-events: none;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     }
     #speedToast.fade { opacity: 0; }
 
-    .prom-controles { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 1002; display: flex; gap: 10px; opacity: 0.9; }
-    .prom-controles button { min-width: 64px; min-height: 64px; padding: 14px 16px; background: #2b2b2b; color: #fff; border: 1px solid #555; border-radius: 12px; font-weight: bold; font-size: 20px; cursor: pointer; }
-
-    /* Cores dos botões de controle */
-    #btnPlay { background: #42b72a; min-width: 82px; border-color: #369622; }
-    #btnPlay.parar { background: #f02849; border-color: #c91f3b; }
-    #btnPrev, #btnNext { background: #1877F2; border-color: #155dbf; }
-    #btnDesce { background: #FF9800; border-color: #e68a00; }
-    #btnSobe { background: #9C27B0; border-color: #7b1fa2; }
+    .prom-controles {
+      position: fixed; z-index: 1002;
+      bottom: calc(16px + var(--safe-bottom));
+      left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; opacity: .92;
+    }
+    .prom-controles button {
+      min-width: 60px; min-height: 60px; padding: 12px 14px;
+      background: rgba(43,43,43,.9); color: #fff; border: 1px solid #555;
+      border-radius: 14px; font-weight: 700; font-size: 19px; cursor: pointer;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    #btnPlay   { background: rgba(66,183,42,.92); min-width: 78px; border-color: #369622; }
+    #btnPlay.parar { background: rgba(240,40,73,.92); border-color: #c91f3b; }
+    #btnPrev, #btnNext { background: rgba(24,119,242,.9); border-color: #155dbf; }
+    #btnDesce  { background: rgba(230,138,0,.9); border-color: #c47700; }
+    #btnSobe   { background: rgba(156,39,176,.9); border-color: #7b1fa2; }
 
     #blackout { position: fixed; inset: 0; background: #000; z-index: 1001; }
 
-    .crono { position: fixed; top: 12px; right: 12px; z-index: 1002; background: rgba(28,30,33,.85); border-radius: 10px; padding: 10px; text-align: center; opacity: 0.9; }
-    #cronoTexto { display: block; font-family: monospace; font-size: 28px; font-weight: bold; color: #42b72a; }
+    .crono {
+      position: fixed; z-index: 1002;
+      top: calc(12px + var(--safe-top));
+      right: calc(10px + var(--safe-right));
+      background: rgba(20,20,24,.88); border-radius: 12px; padding: 10px 12px;
+      text-align: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    #cronoTexto { display: block; font-family: 'Menlo', 'Courier New', monospace; font-size: 26px; font-weight: 700; color: #42b72a; }
     .crono-btns { display: flex; gap: 6px; margin-top: 6px; }
-    .crono-btns button { flex: 1; min-height: 40px; padding: 8px 10px; background: #3a3b3c; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }
+    .crono-btns button { flex: 1; min-height: 36px; padding: 0 8px; background: #3a3b3c; color: #fff; border: none; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
-    /* Espelhamento da Interface (Modo Apresentador) */
     .espelha-ui .prom-controles { transform: translateX(-50%) scaleX(-1); flex-direction: row-reverse; }
     .espelha-ui .btn-voltar, .espelha-ui .crono, .espelha-ui #speedToast { transform: scaleX(-1); }
     .espelha-ui .crono-btns { flex-direction: row-reverse; }
     .espelha-ui .prom-aviso { transform: translateY(-50%) scaleX(-1); }
 
-    /* Custom Modal */
-    #customModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-    .modal-content { background: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .modal-content p { font-size: 18px; margin: 0 0 16px; font-weight: bold; }
-    .modal-content input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; font-family: inherit; }
-    .modal-content .modal-btns { display: flex; gap: 10px; justify-content: center; }
-    .modal-content button { padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; }
-    #modalBtnOk { background: #1877F2; color: #fff; }
+    /* ── Modal ── */
+    #customModal { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-content { background: #fff; padding: 24px 20px; border-radius: 18px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+    .modal-content p { font-size: 17px; margin: 0 0 16px; font-weight: 700; line-height: 1.4; }
+    .modal-content input { width: 100%; padding: 12px; margin-bottom: 14px; border: 1.5px solid #dde; border-radius: 10px; font-size: 16px; font-family: inherit; }
+    .modal-content .modal-btns { display: flex; gap: 10px; }
+    .modal-content button { padding: 13px; border: none; border-radius: 11px; font-size: 16px; font-weight: 700; cursor: pointer; flex: 1; }
+    #modalBtnOk     { background: #1877F2; color: #fff; }
     #modalBtnCancel { background: #E4E6EB; color: #1C1E21; }
 
-    /* ===== AJUSTES POR TAMANHO DE TELA ===== */
-    /* Celular em pé (telas estreitas) */
-    @media (max-width: 560px) {
-      #editor { padding: 12px; padding-bottom: 36px; }
-      h1.titulo { font-size: 21px; }
+    /* ── Mobile pequeno (≤ 430px — iPhone 16/17 Pro Max, Galaxy S) ── */
+    @media (max-width: 430px) {
+      :root { --pad: 12px; --radius: 12px; }
+      h1.titulo { font-size: 19px; }
+      .sub { font-size: 12px; }
+      .papel-btn { font-size: 13px; min-height: 42px; }
       .arquivos button, .link-arq { flex: 1 1 100%; }
-      .ajustes label > span.nome { min-width: 84px; }
-      .prom-controles button { min-width: 56px; font-size: 18px; padding: 10px; }
-      #btnPlay { min-width: 76px; }
-      .crono { padding: 8px; }
-      #cronoTexto { font-size: 24px; }
+      .ajustes label > span.nome { min-width: 78px; font-size: 13px; }
+      .ajustes label { padding: 10px 12px; }
+      .ajustes .valor { font-size: 14px; }
+      #txtNovo { min-height: 90px; font-size: 14px; }
+      #btnAdd  { min-height: 48px; font-size: 15px; }
+      .btn-iniciar { min-height: 58px; font-size: 17px; }
+      .prom-controles button { min-width: 52px; min-height: 54px; font-size: 17px; padding: 10px; }
+      #btnPlay { min-width: 68px; }
+      #cronoTexto { font-size: 22px; }
+      .crono-btns button { font-size: 11px; min-height: 32px; }
     }
-    /* Tablets grandes (Galaxy Tab S10 etc.) — controles confortáveis */
+
+    /* ── Tablet grande (≥ 900px — Galaxy Tab S10, iPad) ── */
     @media (min-width: 900px) {
       #editor { max-width: 900px; }
-      .btn-iniciar { font-size: 23px; min-height: 78px; }
-      .prom-controles button { min-width: 80px; min-height: 72px; font-size: 22px; }
-      #btnPlay { min-width: 110px; }
+      .btn-iniciar { font-size: 22px; min-height: 72px; }
+      .prom-controles button { min-width: 78px; min-height: 70px; font-size: 22px; }
+      #btnPlay { min-width: 104px; }
+      #rcPlay { font-size: 64px; }
+      .rc-row button { font-size: 32px; }
     }
   </style>
 </head>
@@ -238,7 +321,7 @@
     <h1 class="titulo">TVWEB Prompter</h1>
 
     <!-- ===== QR DE ACESSO ===== -->
-    <div class="offline-box">
+    <div class="offline-box card">
       <span class="of-titulo">Compartilhar acesso por QR</span>
       <p class="of-dica">Gere um QR Code com o endereço desta página. O outro tablet escaneia com a câmera e abre no navegador. Para o servidor local, conecte primeiro e depois gere o QR.</p>
       <div class="of-botoes">
@@ -251,7 +334,7 @@
     </div>
 
     <!-- ===== SERVIDOR LOCAL (automático, sem QR) ===== -->
-    <div class="offline-box">
+    <div class="offline-box card">
       <span class="of-titulo">Servidor local (automático, sem QR)</span>
       <p class="of-dica">Um tablet roda o servidor (server.js, via Termux). Ao abrir o endereço do servidor nos dois tablets, eles sincronizam sozinhos. Se você já abriu pelo servidor, a conexão é automática. Passo a passo no README.</p>
       <div class="of-botoes">
