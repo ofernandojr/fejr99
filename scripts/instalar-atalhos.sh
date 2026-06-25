@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/sh
-# Instala, no Termux, o atalho de um toque (Termux:Widget) e o
+# Instala, no Termux, o atalho "Iniciar Tp" (Termux:Widget) e o
 # início automático no boot (Termux:Boot) para o servidor do Prompter.
 #
 # Uso (dentro da pasta do projeto, no Termux):
@@ -9,24 +9,32 @@ set -e
 
 # Caminho absoluto do projeto (a pasta acima de scripts/).
 PROJ="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_PRINCIPAL="$PROJ/scripts/iniciar-tp.sh"
 
 mkdir -p "$HOME/.shortcuts" "$HOME/.termux/boot"
 
-# Conteúdo do launcher, já apontando para a pasta correta do projeto.
-LAUNCHER="#!/data/data/com.termux/files/usr/bin/sh
-termux-wake-lock 2>/dev/null
-cd \"$PROJ\"
-exec node server.js
-"
+# ── Atalho de um toque (Termux:Widget) ──
+# O nome do arquivo (sem .sh) é o que aparece no widget.
+ATALHO="$HOME/.shortcuts/Iniciar Tp.sh"
+printf '#!/data/data/com.termux/files/usr/bin/sh\nexec sh "%s"\n' \
+  "$SCRIPT_PRINCIPAL" > "$ATALHO"
+chmod +x "$ATALHO"
 
-# 1) Atalho de um toque (aparece no widget do Termux:Widget)
-printf '%s' "$LAUNCHER" > "$HOME/.shortcuts/Prompter.sh"
-chmod +x "$HOME/.shortcuts/Prompter.sh"
+# ── Início automático no boot (Termux:Boot) ──
+BOOT="$HOME/.termux/boot/start-prompter.sh"
+printf '#!/data/data/com.termux/files/usr/bin/sh\nexec sh "%s"\n' \
+  "$SCRIPT_PRINCIPAL" > "$BOOT"
+chmod +x "$BOOT"
 
-# 2) Início automático ao ligar o tablet (Termux:Boot)
-printf '%s' "$LAUNCHER" > "$HOME/.termux/boot/start-prompter.sh"
-chmod +x "$HOME/.termux/boot/start-prompter.sh"
-
-echo "OK! Atalhos instalados apontando para: $PROJ"
-echo " - Um toque:  Termux:Widget -> 'Prompter'"
-echo " - No boot:   Termux:Boot (sobe sozinho ao ligar o tablet)"
+echo ""
+echo "Atalhos instalados!"
+echo " - Widget:  Termux:Widget -> 'Iniciar Tp'"
+echo " - Boot:    sobe sozinho ao ligar o tablet"
+echo ""
+echo "Projeto detectado em: $PROJ"
+echo ""
+echo "PRÓXIMOS PASSOS:"
+echo " 1. Instale Termux:Widget e Termux:Boot (F-Droid)"
+echo " 2. Adicione o widget do Termux:Widget na tela inicial"
+echo " 3. Abra o Termux:Boot uma vez (ativa o boot automático)"
+echo " 4. Toque em 'Iniciar Tp' no widget — pronto!"
