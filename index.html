@@ -36,81 +36,39 @@
     #btnConectar.conectado { background: #f02849; }
     .sync-dica { font-size: 12px; color: #888; margin: 0; }
 
-    /* ===== MODO OFFLINE (WebRTC + QR) ===== */
+    /* ===== MODO OFFLINE (QR de acesso + Servidor) ===== */
     .offline-box { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
     .offline-box .of-titulo { font-weight: bold; font-size: 16px; }
     .offline-box .of-dica { font-size: 12px; color: #888; margin: 0; }
     .of-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
     .of-botoes button { flex: 1 1 auto; min-height: 48px; padding: 10px 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; color: #fff; cursor: pointer; }
-    #btnOfHost { background: #9C27B0; }
-    #btnOfGuest { background: #FF9800; }
-    #btnOfLerResp, #btnOfSair { background: #555; }
-    #ofStatus { font-size: 13px; font-weight: 600; color: #777; }
-    #ofStatus.on { color: #1a7f37; }
-    #ofStatus.wait { color: #e68a00; }
-    #ofStatus.err { color: #c0392b; }
-    #ofQrArea { display: none; flex-direction: column; align-items: center; gap: 8px; padding: 10px; background: #fafafa; border: 1px dashed #ccc; border-radius: 8px; }
-    #ofQrArea.show { display: flex; }
-    #ofQrImg { width: min(92vw, 480px); height: auto; image-rendering: pixelated; background: #fff; padding: 8px; }
-    #ofQrLegenda { font-size: 13px; color: #444; text-align: center; font-weight: 600; }
-
-    /* Scanner de câmera (overlay) */
-    #scanner { position: fixed; inset: 0; background: #000; z-index: 9998; display: none; flex-direction: column; }
-    #scanner.show { display: flex; }
-    #scanVideo { flex: 1; width: 100%; object-fit: cover; }
-    #scanMsg { position: absolute; top: 16px; left: 0; right: 0; text-align: center; color: #fff; font-size: 16px; font-weight: bold; text-shadow: 0 1px 3px #000; padding: 0 16px; }
-    #scanGuia { position: absolute; top: 50%; left: 50%; width: 64vw; max-width: 360px; aspect-ratio: 1; transform: translate(-50%, -50%); border: 3px solid #42b72a; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0,0,0,.45); }
-    #btnScanCancel { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; min-height: 54px; padding: 14px 28px; background: #f02849; color: #fff; border: none; border-radius: 10px; font-weight: bold; font-size: 17px; }
-
-    /* ===== SERVIDOR LOCAL ===== */
-    #inputSrv { flex: 1 1 58%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; }
+    #btnGerarQr { background: #1877F2; }
     #btnSrv { flex: 1 1 30%; background: #1a7f37; }
     #btnSrv.conectado { background: #f02849; }
     #srvStatus { font-size: 13px; font-weight: 600; color: #777; }
     #srvStatus.on { color: #1a7f37; }
     #srvStatus.wait { color: #e68a00; }
     #srvStatus.err { color: #c0392b; }
+    #qrAcesso { display: none; flex-direction: column; align-items: center; gap: 8px; padding: 10px; background: #fafafa; border: 1px dashed #ccc; border-radius: 8px; }
+    #qrAcesso.show { display: flex; }
+    #qrAcessoImg { max-width: min(92vw, 380px); height: auto; image-rendering: pixelated; background: #fff; padding: 8px; }
+    #qrAcessoUrl { font-size: 13px; color: #1877F2; font-weight: bold; word-break: break-all; text-align: center; }
+    #inputSrv { flex: 1 1 58%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; }
 
-    .arquivos { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-    .arquivos button, .link-arq {
-      flex: 1 1 auto; min-height: 48px; padding: 12px 14px; background: #E4E6EB;
-      border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; font-weight: 600;
-      cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center;
-    }
-
-    .add-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-    #txtNovo { min-height: 96px; padding: 12px; font-size: 17px; border: 1px solid #ccd0d5; border-radius: 8px; resize: vertical; }
-    #btnAdd { min-height: 54px; padding: 14px; background: #1877F2; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 17px; cursor: pointer; }
-
-    #listaPauta { list-style: none; margin: 0 0 18px; padding: 0; }
-    #listaPauta li {
-      display: flex; align-items: center; gap: 8px; background: #fff;
-      border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 8px;
-    }
-    #listaPauta .texto { flex: 1; font-size: 15px; color: #333; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    #listaPauta button { width: 46px; height: 46px; flex: none; border: none; border-radius: 8px; color: #fff; font-weight: bold; font-size: 18px; cursor: pointer; }
-    .b-edit { background: #2196F3; } .b-del { background: #f44336; }
-    .b-up, .b-down { background: #888; }
-
-    .ajustes { display: flex; flex-direction: column; gap: 14px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .ajustes label { display: flex; align-items: center; gap: 12px; font-size: 16px; }
-    .ajustes label > span.nome { min-width: 96px; }
-    .ajustes .valor { min-width: 44px; text-align: right; font-weight: bold; color: #1877F2; font-variant-numeric: tabular-nums; }
-    .ajustes .chk { gap: 10px; }
-    .ajustes input[type=checkbox] { width: 26px; height: 26px; }
-
-    /* Slider grande pra toque */
-    input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 10px; background: #d0d4da; border-radius: 5px; outline: none; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #1877F2; cursor: pointer; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
-    input[type=range]::-moz-range-thumb { width: 32px; height: 32px; border-radius: 50%; background: #1877F2; cursor: pointer; border: 3px solid #fff; }
-
-    /* Mapeamento de controle Bluetooth */
-    .mapeamento { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .mapeamento .map-titulo { font-weight: bold; font-size: 16px; margin: 0 0 4px; }
-    .mapeamento .map-dica { font-size: 12px; color: #888; margin: 0 0 6px; }
+    /* ===== CONTROLE BLUETOOTH (cascata/accordion) ===== */
+    .mapeamento { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+    .map-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; user-select: none; }
+    .map-header-left { display: flex; flex-direction: column; gap: 2px; }
+    .mapeamento .map-titulo { font-weight: bold; font-size: 16px; margin: 0; }
+    .mapeamento .map-dica { font-size: 12px; color: #888; margin: 0; }
+    .map-arrow { font-size: 18px; color: #888; transition: transform .2s; }
+    .map-arrow.aberto { transform: rotate(180deg); }
+    .map-body { padding: 0 16px 16px; display: none; }
+    .map-body.aberto { display: block; }
+    #selGamepad { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; margin-bottom: 12px; background: #f9f9f9; }
     #padStatus { font-size: 12px; font-weight: 600; color: #777; margin: 0 0 12px; }
     #padStatus.on { color: #1a7f37; }
-    .map-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #eee; }
+    .map-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid #eee; }
     .map-item:first-of-type { border-top: none; }
     .map-item .map-nome { flex: 1; font-size: 15px; }
     .map-item .map-bind { min-width: 96px; text-align: center; font-size: 13px; font-weight: bold; color: #1877F2; background: #eef3ff; border-radius: 6px; padding: 7px 8px; }
@@ -246,35 +204,16 @@
     <p class="credito">desenvolvido por Fernando Junior</p>
     <h1 class="titulo">TVWEB Prompter</h1>
 
-    <!-- ===== SINCRONIZAÇÃO REMOTA ===== -->
-    <div class="sync-box">
-      <div class="sync-head">
-        <span class="sync-titulo">Sincronização remota</span>
-        <span class="sync-status off" id="syncStatus"><span class="dot"></span><span id="syncStatusTxt">Offline</span></span>
-      </div>
-      <div class="sync-row">
-        <input type="text" id="inputSala" placeholder="Código da sala (ex.: tvweb1)" autocapitalize="none" autocomplete="off">
-        <button id="btnConectar">Conectar</button>
-      </div>
-      <p class="sync-dica">Use o mesmo código nos dois tablets para sincronizar pauta, ajustes e controles em tempo real.</p>
-    </div>
-
-    <!-- ===== MODO OFFLINE (SEM INTERNET) ===== -->
+    <!-- ===== QR DE ACESSO ===== -->
     <div class="offline-box">
-      <span class="of-titulo">Conexão offline (sem internet)</span>
-      <p class="of-dica">Conecta dois tablets diretamente, pela mesma Wi-Fi ou pelo hotspot de um deles, sem internet. Um tablet cria a conexão e mostra um QR; o outro lê o QR e mostra um QR de resposta para fechar a conexão.</p>
+      <span class="of-titulo">Compartilhar acesso por QR</span>
+      <p class="of-dica">Gere um QR Code com o endereço desta página. O outro tablet escaneia com a câmera e abre no navegador. Para o servidor local, conecte primeiro e depois gere o QR.</p>
       <div class="of-botoes">
-        <button id="btnOfHost">Criar conexão (este controla)</button>
-        <button id="btnOfGuest">Entrar (ler QR)</button>
+        <button id="btnGerarQr">Gerar QR de acesso</button>
       </div>
-      <div class="of-botoes">
-        <button id="btnOfLerResp" class="hidden">Ler QR de resposta</button>
-        <button id="btnOfSair" class="hidden">Encerrar conexão</button>
-      </div>
-      <div id="ofStatus">Desconectado.</div>
-      <div id="ofQrArea">
-        <img id="ofQrImg" alt="QR de conexão">
-        <div id="ofQrLegenda"></div>
+      <div id="qrAcesso">
+        <canvas id="qrAcessoImg"></canvas>
+        <div id="qrAcessoUrl"></div>
       </div>
     </div>
 
@@ -313,10 +252,18 @@
     </div>
 
     <div class="mapeamento">
-      <p class="map-titulo">Controle Bluetooth</p>
-      <p class="map-dica">Toque em "Mapear" e pressione o botão desejado no controle. Funciona com apresentadores/remotos (que enviam teclas) e com gamepads.</p>
-      <p id="padStatus">Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).</p>
-      <div id="listaMapeamento"></div>
+      <div class="map-header" id="mapHeader">
+        <span class="map-titulo">Controle Bluetooth</span>
+        <span class="map-arrow" id="mapArrow">▼</span>
+      </div>
+      <div class="map-body" id="mapBody">
+        <p class="map-dica">Toque em "Mapear" e pressione o botão desejado no controle. Funciona com apresentadores/remotos (que enviam teclas) e com gamepads.</p>
+        <p id="padStatus">Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).</p>
+        <label style="display:block;margin-bottom:10px;font-size:13px;font-weight:600;">Dispositivo gamepad:
+          <select id="selGamepad"><option value="">— Nenhum gamepad conectado —</option></select>
+        </label>
+        <div id="listaMapeamento"></div>
+      </div>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
@@ -771,7 +718,6 @@
     function iniciarPrompter() {
       lerSettings();
       montarPrompter();
-      resetarScroll();
       $('#blackout').classList.add('hidden');
       showPrompter();
       pushLive(true);
@@ -832,18 +778,21 @@
     let aplicandoRemoto = false;
     let liveGen = 0;           // contador de "saltos"/resets para forçar realinhamento
 
-    // Estado da conexão offline (WebRTC)
-    let rtcConectado = false;
-    let rtcChannel = null;
+    // WebRTC removido; variáveis mantidas para não quebrar pushPauta/pushSettings/pushLive
+    const rtcConectado = false;
+    const rtcChannel = null;
+    function enviarRTC() {}
 
     // Estado do servidor local (SSE)
     let srvBase = null, srvEvents = null, srvConectado = false, srvRecebeuPauta = false;
 
     function setSyncStatus(estado, texto) {
       const el = $('#syncStatus');
+      if (!el) return;
       el.classList.remove('on', 'off', 'err');
       el.classList.add(estado);
-      $('#syncStatusTxt').textContent = texto;
+      const txt = $('#syncStatusTxt');
+      if (txt) txt.textContent = texto;
     }
 
     function atualizarIndicadorPrompter() {
@@ -946,242 +895,68 @@
       atualizarRcStatus();
     }
 
-    // ----- CONECTAR / DESCONECTAR -----
+    // ----- FIREBASE: auto-conecta pela última sala salva (sem UI de sala) -----
     function desconectarSala() {
       if (salaRef) salaRef.off();
-      salaRef = null;
-      conectado = false;
+      salaRef = null; conectado = false;
       setSyncStatus('off', 'Offline');
       atualizarIndicadorPrompter();
-      $('#btnConectar').textContent = 'Conectar';
-      $('#btnConectar').classList.remove('conectado');
     }
 
-    function conectarSala() {
-      if (!FIREBASE_OK || !fbDB) {
-        showModal('Sincronização não configurada. Cole as chaves do Firebase no código (bloco firebaseConfig) e publique novamente.', null);
-        return;
-      }
-      const nome = $('#inputSala').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      if (!nome) { showModal('Digite um código de sala (ex.: tvweb1).', null); return; }
-
-      if (conectado) { desconectarSala(); return; }
-
+    function conectarSala(nome) {
+      if (!FIREBASE_OK || !fbDB || !nome) return;
+      if (conectado) desconectarSala();
       try {
         salaRef = fbDB.ref('salas/' + nome);
-        setSyncStatus('on', 'Sala: ' + nome);
+        setSyncStatus('on', 'Firebase: ' + nome);
         conectado = true;
         atualizarIndicadorPrompter();
-        $('#btnConectar').textContent = 'Desconectar';
-        $('#btnConectar').classList.add('conectado');
         localStorage.setItem('tvweb_sala', nome);
-
-        // Ao entrar, se já houver dados na sala, eles chegam; se a sala
-        // estiver vazia, enviamos o estado atual deste dispositivo.
         salaRef.child('pauta').once('value', (snap) => {
-          if (snap.exists()) aplicarPautaRemota(snap.val());
-          else pushPauta();
+          if (snap.exists()) aplicarPautaRemota(snap.val()); else pushPauta();
         });
         salaRef.child('settings').once('value', (snap) => {
-          if (snap.exists()) aplicarSettingsRemoto(snap.val());
-          else pushSettings();
+          if (snap.exists()) aplicarSettingsRemoto(snap.val()); else pushSettings();
         });
-
-        // Escutas em tempo real
         salaRef.child('pauta').on('value',    (snap) => { if (snap.exists()) aplicarPautaRemota(snap.val()); });
         salaRef.child('settings').on('value', (snap) => { if (snap.exists()) aplicarSettingsRemoto(snap.val()); });
         salaRef.child('live').on('value',     (snap) => { if (snap.exists()) aplicarLiveRemoto(snap.val()); });
       } catch (err) {
-        console.error(err);
-        setSyncStatus('err', 'Erro');
-        desconectarSala();
-        showModal('Não foi possível conectar à sala. Verifique a configuração do Firebase.', null);
+        console.error(err); desconectarSala();
       }
     }
 
-    $('#btnConectar').addEventListener('click', conectarSala);
-
-    // Pré-preenche o último código de sala usado
+    // Auto-conecta se havia sala salva
     if (FIREBASE_OK) {
       const ultima = localStorage.getItem('tvweb_sala');
-      if (ultima) $('#inputSala').value = ultima;
-    } else {
-      setSyncStatus('off', 'Firebase não configurado');
+      if (ultima) conectarSala(ultima);
     }
 
-    /* ============================================================
-       ===== CONEXÃO OFFLINE (WebRTC PONTO-A-PONTO + QR) =====
-       ============================================================
-       Sem internet: os dois tablets na mesma Wi-Fi (ou no hotspot de
-       um deles) trocam um "aperto de mão" por QR Code e abrem um canal
-       de dados direto. A partir daí pauta/ajustes/controles trafegam
-       de um tablet para o outro, sem nuvem.
-       Fluxo:
-         HOST (controle): cria oferta -> mostra QR -> lê QR de resposta.
-         GUEST (exibição): lê QR da oferta -> mostra QR de resposta.
-    */
-    let pc = null;             // RTCPeerConnection atual
-    let souHost = false;       // este tablet criou a conexão (controle)
-
-    function ofStatus(estado, texto) {
-      const el = $('#ofStatus');
-      el.classList.remove('on', 'wait', 'err');
-      if (estado) el.classList.add(estado);
-      el.textContent = texto;
-    }
-
-    function mostrarQr(texto, legenda) {
-      const area = $('#ofQrArea');
-      const comprimido = LZString.compressToEncodedURIComponent(texto);
-      const qr = qrcode(0, 'L');         // 0 = versão automática, 'L' = mais capacidade
-      qr.addData(comprimido);
+    /* ===== QR DE ACESSO ===== */
+    $('#btnGerarQr').addEventListener('click', () => {
+      const url = srvBase ? srvBase + '/' : window.location.href;
+      const qrBox = $('#qrAcesso');
+      const canvas = $('#qrAcessoImg');
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
       qr.make();
-      $('#ofQrImg').src = qr.createDataURL(5, 12);
-      $('#ofQrLegenda').textContent = legenda;
-      area.classList.add('show');
-    }
-
-    function esconderQr() { $('#ofQrArea').classList.remove('show'); }
-
-    // Espera o ICE terminar de coletar candidatos (handshake em um QR só).
-    function esperarIce(conn) {
-      return new Promise((resolve) => {
-        if (conn.iceGatheringState === 'complete') return resolve();
-        let pronto = false;
-        const fim = () => { if (!pronto) { pronto = true; resolve(); } };
-        conn.addEventListener('icegatheringstatechange', () => {
-          if (conn.iceGatheringState === 'complete') fim();
-        });
-        setTimeout(fim, 2500); // fallback: candidatos da rede local já vieram
-      });
-    }
-
-    function criarPeer() {
-      // Sem STUN/TURN: usa candidatos da rede local (mesma Wi-Fi / hotspot).
-      const conn = new RTCPeerConnection({ iceServers: [] });
-      conn.onconnectionstatechange = () => {
-        if (['disconnected', 'failed', 'closed'].includes(conn.connectionState)) {
-          if (rtcConectado) encerrarOffline(true);
+      // Desenha no canvas
+      const modules = qr.getModuleCount();
+      const cell = Math.floor(Math.min(window.innerWidth * 0.85, 380) / modules);
+      canvas.width = modules * cell;
+      canvas.height = modules * cell;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < modules; r++) {
+        for (let c = 0; c < modules; c++) {
+          if (qr.isDark(r, c)) ctx.fillRect(c * cell, r * cell, cell, cell);
         }
-      };
-      return conn;
-    }
-
-    function ligarCanal(canal) {
-      rtcChannel = canal;
-      canal.onopen = () => {
-        rtcConectado = true;
-        ofStatus('on', '🔗 Conectado ao outro tablet.');
-        esconderQr();
-        $('#btnOfHost').classList.add('hidden');
-        $('#btnOfGuest').classList.add('hidden');
-        $('#btnOfLerResp').classList.add('hidden');
-        $('#btnOfSair').classList.remove('hidden');
-        atualizarIndicadorPrompter();
-        // Só o host envia o estado inicial, para o convidado adotar a
-        // pauta/ajustes do controle (evita sobrescrever com dados vazios).
-        if (souHost) {
-          enviarRTC('pauta', Pauta);
-          enviarRTC('settings', {
-            fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
-            espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
-          });
-        }
-      };
-      canal.onclose = () => { if (rtcConectado) encerrarOffline(true); };
-      canal.onmessage = (ev) => {
-        let msg;
-        try { msg = JSON.parse(ev.data); } catch (e) { return; }
-        if (msg.kind === 'pauta')    aplicarPautaRemota(msg.data);
-        else if (msg.kind === 'settings') aplicarSettingsRemoto(msg.data);
-        else if (msg.kind === 'live')     aplicarLiveRemoto(msg.data);
-      };
-    }
-
-    function enviarRTC(kind, data) {
-      if (rtcChannel && rtcChannel.readyState === 'open') {
-        try { rtcChannel.send(JSON.stringify({ kind, data })); } catch (e) {}
       }
-    }
-
-    function encerrarOffline(silencioso) {
-      try { if (rtcChannel) rtcChannel.close(); } catch (e) {}
-      try { if (pc) pc.close(); } catch (e) {}
-      rtcChannel = null; pc = null; rtcConectado = false;
-      esconderQr();
-      $('#btnOfHost').classList.remove('hidden');
-      $('#btnOfGuest').classList.remove('hidden');
-      $('#btnOfLerResp').classList.add('hidden');
-      $('#btnOfSair').classList.add('hidden');
-      atualizarIndicadorPrompter();
-      ofStatus(silencioso ? 'err' : '', silencioso ? 'Conexão encerrada.' : 'Desconectado.');
-    }
-
-    // ----- HOST: cria a oferta -----
-    async function offlineHost() {
-      try {
-        encerrarOffline(false);
-        souHost = true;
-        ofStatus('wait', 'Gerando QR de conexão…');
-        pc = criarPeer();
-        ligarCanal(pc.createDataChannel('sync'));
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        await esperarIce(pc);
-        mostrarQr(JSON.stringify(pc.localDescription),
-          '1) Mostre este QR ao outro tablet. 2) Depois toque em "Ler QR de resposta".');
-        $('#btnOfLerResp').classList.remove('hidden');
-        $('#btnOfSair').classList.remove('hidden');
-        $('#btnOfHost').classList.add('hidden');
-        $('#btnOfGuest').classList.add('hidden');
-        ofStatus('wait', 'Aguardando o outro tablet ler o QR e gerar a resposta…');
-      } catch (e) {
-        console.error(e); ofStatus('err', 'Erro ao criar conexão.');
-      }
-    }
-
-    // ----- HOST: lê o QR de resposta do convidado -----
-    function offlineLerResposta() {
-      abrirScanner(async (texto) => {
-        try {
-          const answer = JSON.parse(texto);
-          await pc.setRemoteDescription(answer);
-          ofStatus('wait', 'Finalizando conexão…');
-        } catch (e) {
-          console.error(e); ofStatus('err', 'QR de resposta inválido.');
-        }
-      });
-    }
-
-    // ----- GUEST: lê o QR da oferta e gera a resposta -----
-    function offlineGuest() {
-      encerrarOffline(false);
-      souHost = false;
-      abrirScanner(async (texto) => {
-        try {
-          ofStatus('wait', 'Gerando QR de resposta…');
-          const offer = JSON.parse(texto);
-          pc = criarPeer();
-          pc.ondatachannel = (ev) => ligarCanal(ev.channel);
-          await pc.setRemoteDescription(offer);
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await esperarIce(pc);
-          mostrarQr(JSON.stringify(pc.localDescription),
-            'Mostre este QR de resposta para o tablet que controla.');
-          $('#btnOfSair').classList.remove('hidden');
-          $('#btnOfHost').classList.add('hidden');
-          $('#btnOfGuest').classList.add('hidden');
-        } catch (e) {
-          console.error(e); ofStatus('err', 'QR inválido ou erro ao conectar.');
-        }
-      });
-    }
-
-    $('#btnOfHost').addEventListener('click', offlineHost);
-    $('#btnOfGuest').addEventListener('click', offlineGuest);
-    $('#btnOfLerResp').addEventListener('click', offlineLerResposta);
-    $('#btnOfSair').addEventListener('click', () => encerrarOffline(false));
+      $('#qrAcessoUrl').textContent = url;
+      qrBox.classList.add('show');
+    });
 
     /* ----- SCANNER DE CÂMERA (jsQR) ----- */
     let scanStream = null, scanRAF = null, scanCallback = null;
@@ -1469,10 +1244,12 @@
     function pollGamepad() {
       if (!navigator.getGamepads) return;
       const pads = navigator.getGamepads();
+      const selIdx = $('#selGamepad').value;
       let algum = false;
       for (const pad of pads) {
         if (!pad) continue;
         algum = true;
+        if (selIdx && String(pad.index) !== selIdx) continue;
         pad.buttons.forEach((btn, idx) => {
           const key = pad.index + ':' + idx;
           const pressed = btn.pressed || btn.value > 0.5;
@@ -1482,15 +1259,41 @@
       }
       if (algum !== padDetectado) {
         padDetectado = algum;
-        const el = $('#padStatus');
-        el.classList.toggle('on', algum);
-        el.textContent = algum
-          ? '🎮 Gamepad conectado.'
-          : 'Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).';
+        atualizarSelGamepad();
       }
     }
 
-    window.addEventListener('gamepadconnected', () => { /* detectado no próximo poll */ });
+    /* ===== ACCORDION BLUETOOTH ===== */
+    $('#mapHeader').addEventListener('click', () => {
+      const body = $('#mapBody');
+      const arrow = $('#mapArrow');
+      const aberto = body.classList.toggle('aberto');
+      arrow.classList.toggle('aberto', aberto);
+    });
+
+    /* ===== SELETOR DE GAMEPAD ===== */
+    function atualizarSelGamepad() {
+      const sel = $('#selGamepad');
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const anterior = sel.value;
+      sel.innerHTML = '<option value="">— Nenhum selecionado —</option>';
+      let algum = false;
+      for (const pad of pads) {
+        if (!pad) continue;
+        algum = true;
+        const opt = document.createElement('option');
+        opt.value = String(pad.index);
+        opt.textContent = pad.id || ('Gamepad ' + pad.index);
+        if (String(pad.index) === anterior) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      const el = $('#padStatus');
+      el.classList.toggle('on', algum);
+      el.textContent = algum ? '🎮 Gamepad conectado.' : 'Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).';
+    }
+
+    window.addEventListener('gamepadconnected', atualizarSelGamepad);
+    window.addEventListener('gamepaddisconnected', atualizarSelGamepad);
 
     // Aplicar papel APÓS tudo estar definido (evita chamar funções ainda não declaradas)
     aplicarPapel(papelAtual);
