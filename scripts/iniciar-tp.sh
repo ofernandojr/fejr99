@@ -47,47 +47,36 @@ else
 fi
 
 # ============================================================
-# 3. HOTSPOT — abre as configurações para ligar manualmente
-#    (ativar hotspot via comando requer permissão de root/ADB)
+# 3. HOTSPOT — abre configurações e espera o usuário ligar
 # ============================================================
 echo ""
 echo "[..] Abrindo configuracoes de hotspot..."
-echo "     Ligue o Hotspot e volte ao Termux."
-echo ""
 am start -a android.intent.action.MAIN \
   -n com.android.settings/.TetherSettings 2>/dev/null \
   || am start -a android.settings.WIRELESS_SETTINGS 2>/dev/null \
   || echo "     (Abra manualmente: Configuracoes > Hotspot)"
 
-# Aguarda o usuário ligar o hotspot (até 30s), mostrando contagem
-echo "[..] Aguardando hotspot (30s)..."
+echo ""
+echo "  1. Ligue o Hotspot nas configuracoes"
+echo "  2. Volte ao Termux"
+echo "  3. Pressione ENTER"
+echo ""
+read -r dummy
+
+# Detecta o IP após o usuário confirmar
 IP=""
+# Tenta até 5x com intervalo de 1s (interface pode demorar 1-2s pra aparecer)
 i=0
-while [ $i -lt 30 ]; do
+while [ $i -lt 5 ]; do
+  TODOS=$(ip -4 addr 2>/dev/null \
+    | awk '/inet / && !/127\.0\.0\.1/ {gsub(/\/.*/, "", $2); print $2}')
+  IP=$(echo "$TODOS" | grep -E '^192\.168\.(43|49)\.' | head -1)
+  [ -z "$IP" ] && IP=$(echo "$TODOS" | grep -v '^10\.' | head -1)
+  [ -z "$IP" ] && IP=$(echo "$TODOS" | head -1)
+  [ -n "$IP" ] && break
   sleep 1
   i=$((i+1))
-
-  # Pega todos os IPs não-loopback disponíveis
-  TODOS_IPS=$(ip -4 addr 2>/dev/null \
-    | awk '/inet / && !/127\.0\.0\.1/ {gsub(/\/.*/, "", $2); print $2}')
-
-  # Prefere o range típico do hotspot Android (192.168.43.x ou 192.168.49.x)
-  IP=$(echo "$TODOS_IPS" | grep -E '^192\.168\.(43|49)\.' | head -1)
-
-  # Fallback: qualquer IP que não seja loopback e não seja de rede cabeada (10.x)
-  if [ -z "$IP" ]; then
-    IP=$(echo "$TODOS_IPS" | grep -v '^10\.' | head -1)
-  fi
-
-  # Qualquer IP como último recurso
-  if [ -z "$IP" ]; then
-    IP=$(echo "$TODOS_IPS" | head -1)
-  fi
-
-  [ -n "$IP" ] && break
-  printf "\r     %ds..." "$((30 - i))"
 done
-echo ""
 
 # ============================================================
 # 4. RESULTADO
