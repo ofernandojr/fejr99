@@ -751,6 +751,7 @@
     function iniciarPrompter() {
       lerSettings();
       montarPrompter();
+      aplicarOffset();
       $('#blackout').classList.add('hidden');
       showPrompter();
       pushLive(true);
