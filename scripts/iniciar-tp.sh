@@ -30,9 +30,27 @@ else
     || { echo "[ERRO] Servidor nao respondeu. Veja $PROJ/server.log"; read -r x; exit 1; }
 fi
 
-# Pega todos os IPs disponíveis
+# Pega todos os IPs disponíveis (tenta ip e ifconfig)
+IPS=""
+
+# Tentativa 1: ip addr
 IPS=$(ip -4 addr 2>/dev/null \
   | awk '/inet / && !/127\.0\.0\.1/ {gsub(/\/.*/, "", $2); print $2}')
+
+# Tentativa 2: ifconfig (fallback)
+if [ -z "$IPS" ]; then
+  IPS=$(ifconfig 2>/dev/null \
+    | awk '/inet / && !/127\.0\.0\.1/ {
+        for(i=1;i<=NF;i++) if($i~/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $i!="127.0.0.1") print $i
+      }')
+fi
+
+# Diagnóstico — mostra todas as interfaces para ajudar a identificar o problema
+echo ""
+echo "--- interfaces detectadas ---"
+ip addr 2>/dev/null || ifconfig 2>/dev/null || echo "(nenhum comando disponivel)"
+echo "-----------------------------"
+echo ""
 
 echo ""
 echo "========================================"
