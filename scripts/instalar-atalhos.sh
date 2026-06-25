@@ -13,12 +13,17 @@ SCRIPT_PRINCIPAL="$PROJ/scripts/iniciar-tp.sh"
 
 mkdir -p "$HOME/.shortcuts" "$HOME/.termux/boot"
 
-# ── Atalho de um toque (Termux:Widget) ──
+# ── Atalhos de um toque (Termux:Widget) ──
 # O nome do arquivo (sem .sh) é o que aparece no widget.
 ATALHO="$HOME/.shortcuts/Iniciar Tp.sh"
 printf '#!/data/data/com.termux/files/usr/bin/sh\nexec sh "%s"\n' \
   "$SCRIPT_PRINCIPAL" > "$ATALHO"
 chmod +x "$ATALHO"
+
+ATALHO2="$HOME/.shortcuts/Conectar Tp.sh"
+printf '#!/data/data/com.termux/files/usr/bin/sh\nexec sh "%s/scripts/conectar-tp.sh"\n' \
+  "$PROJ" > "$ATALHO2"
+chmod +x "$ATALHO2"
 
 # ── Início automático no boot (Termux:Boot) ──
 BOOT="$HOME/.termux/boot/start-prompter.sh"
@@ -28,8 +33,9 @@ chmod +x "$BOOT"
 
 echo ""
 echo "Atalhos instalados!"
-echo " - Widget:  Termux:Widget -> 'Iniciar Tp'"
-echo " - Boot:    sobe sozinho ao ligar o tablet"
+echo " - Widget:  'Iniciar Tp'   (tablet servidor/controle)"
+echo " - Widget:  'Conectar Tp'  (tablet de exibicao)"
+echo " - Boot:    sobe sozinho ao ligar o tablet servidor"
 echo ""
 echo "Projeto detectado em: $PROJ"
 echo ""
