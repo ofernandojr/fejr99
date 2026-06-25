@@ -124,14 +124,15 @@
     }
 
     /* ===== SELETOR DE PAPEL ===== */
-    .papel-box { display: flex; gap: 10px; margin-bottom: 16px; }
-    .papel-btn { flex: 1; min-height: 64px; border: 2px solid #ddd; border-radius: 10px; background: #fff; font-size: 16px; font-weight: bold; cursor: pointer; color: #555; transition: all .15s; }
+    #papelBox { display: flex; gap: 10px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 200; }
+    .papel-btn { flex: 1; min-height: 52px; border: 2px solid #ddd; border-radius: 10px; background: #f5f5f5; font-size: 15px; font-weight: bold; cursor: pointer; color: #555; transition: all .15s; }
     .papel-btn.ativo { border-color: #1877F2; background: #eef3ff; color: #1877F2; }
 
     /* ===== PAINEL CONTROLE REMOTO ===== */
     #painelControle { position: fixed; inset: 0; background: #1a1a2e; z-index: 500; display: flex; flex-direction: column; padding: 16px; gap: 12px; user-select: none; -webkit-user-select: none; }
-    .rc-status { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,.07); border-radius: 10px; }
-    .rc-sync { font-size: 14px; font-weight: bold; color: #aaa; }
+    .rc-status { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,.07); border-radius: 10px; }
+    #rcVoltar { background: #444; border: none; border-radius: 8px; color: #fff; font-weight: bold; font-size: 14px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
+    .rc-sync { font-size: 14px; font-weight: bold; color: #aaa; flex: 1; text-align: center; }
     .rc-sync.on { color: #42b72a; }
     .rc-vel { font-size: 22px; font-weight: bold; color: #fff; font-variant-numeric: tabular-nums; }
     #rcPlay { width: 100%; flex: 1; background: #42b72a; border: none; border-radius: 16px; color: #fff; font-size: 48px; font-weight: bold; cursor: pointer; min-height: 160px; }
@@ -234,12 +235,14 @@
   </style>
 </head>
 <body>
+  <!-- ===== SELETOR DE PAPEL (fora do editor, sempre visível) ===== -->
+  <div class="papel-box" id="papelBox">
+    <button class="papel-btn ativo" id="btnPapelExib">📺 Exibição / Edição</button>
+    <button class="papel-btn" id="btnPapelCtrl">🎮 Controle Remoto</button>
+  </div>
+
   <!-- ===== VIEW EDIÇÃO ===== -->
   <div id="editor">
-    <div class="papel-box">
-      <button class="papel-btn ativo" id="btnPapelExib">📺 Exibição / Edição</button>
-      <button class="papel-btn" id="btnPapelCtrl">🎮 Controle Remoto</button>
-    </div>
     <p class="credito">desenvolvido por Fernando Junior</p>
     <h1 class="titulo">TVWEB Prompter</h1>
 
@@ -322,6 +325,7 @@
   <!-- ===== PAINEL CONTROLE REMOTO ===== -->
   <div id="painelControle" class="hidden">
     <div class="rc-status">
+      <button id="rcVoltar">⟵ Sair</button>
       <span class="rc-sync" id="rcSync">⬤ Desconectado</span>
       <span class="rc-vel">Vel: <span id="rcVelVal">1.5</span></span>
     </div>
@@ -570,9 +574,9 @@
       const ehCtrl = papel === 'controle';
       $('#btnPapelExib').classList.toggle('ativo', !ehCtrl);
       $('#btnPapelCtrl').classList.toggle('ativo', ehCtrl);
+      // painel de controle cobre tudo — esconde seletor e editor
       $('#painelControle').classList.toggle('hidden', !ehCtrl);
-      // No modo controle, o editor fica visível só se o prompter não estiver aberto
-      // (o painel substitui tudo)
+      $('#papelBox').classList.toggle('hidden', ehCtrl);
       if (ehCtrl) {
         editorEl.classList.add('hidden');
         prompterEl.classList.add('hidden');
@@ -584,7 +588,7 @@
 
     $('#btnPapelExib').addEventListener('click', () => aplicarPapel('exibicao'));
     $('#btnPapelCtrl').addEventListener('click', () => aplicarPapel('controle'));
-    aplicarPapel(papelAtual);
+    // aplicarPapel é chamado no final do script, após tudo estar definido
 
     /* ===== PAINEL CONTROLE REMOTO ===== */
     function atualizarRcPlay() {
@@ -612,6 +616,7 @@
       toggleBlackout();
       $('#rcBlackout').classList.toggle('ativo');
     });
+    $('#rcVoltar').addEventListener('click', () => aplicarPapel('exibicao'));
 
     /* ===== PROMPTER: MONTAGEM ===== */
     const promTrack = $('#promTrack');
@@ -1486,6 +1491,9 @@
     }
 
     window.addEventListener('gamepadconnected', () => { /* detectado no próximo poll */ });
+
+    // Aplicar papel APÓS tudo estar definido (evita chamar funções ainda não declaradas)
+    aplicarPapel(papelAtual);
   </script>
 </body>
 </html>
