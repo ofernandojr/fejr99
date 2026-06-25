@@ -541,7 +541,11 @@
     });
 
     ['#rngFonte', '#rngMargem', '#rngVel', '#chkEspelho', '#chkEspelhoUI'].forEach(sel =>
-      $(sel).addEventListener('input', () => { lerSettings(); pushSettings(); })
+      $(sel).addEventListener('input', () => {
+        lerSettings();
+        pushSettings();
+        if (!prompterEl.classList.contains('hidden')) { montarPrompter(); aplicarOffset(); }
+      })
     );
     lerSettings();
 
