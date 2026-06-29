@@ -196,6 +196,13 @@
     #prompter { position: fixed; inset: 0; background: #000; z-index: 1000; overflow: hidden; touch-action: none; }
     #prompter, .prom-controles, .crono, .btn-voltar { user-select: none; -webkit-user-select: none; }
 
+    /* Barra de progresso da pauta (topo do prompter) */
+    #promProgresso { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,.12); z-index: 1003; }
+    #promProgressoBar { height: 100%; width: 0; background: #42b72a; transition: width .1s linear; }
+
+    /* Camada de toque: cobre a tela, fica abaixo dos controles/botões */
+    #promTouch { position: absolute; inset: 0; z-index: 1000; }
+
     #promViewport { position: absolute; inset: 0; }
     #promTrack { position: absolute; top: 0; left: 0; width: 100%; padding-top: 42vh; will-change: transform; }
     #promTrack .block {
@@ -406,9 +413,13 @@
 
   <!-- ===== VIEW PROMPTER ===== -->
   <div id="prompter" class="hidden">
+    <div id="promProgresso"><div id="promProgressoBar"></div></div>
     <button class="btn-voltar" id="btnVoltar">⟵ VOLTAR</button>
     <div id="syncIndicador" class="hidden">⚡ Sincronizado</div>
     <div id="speedToast" class="hidden">Velocidade: 1.5</div>
+
+    <!-- Camada de toque: 1 toque = play/pause; arrastar na vertical = velocidade -->
+    <div id="promTouch"></div>
 
     <div id="promViewport">
       <div id="promTrack"></div>
@@ -715,6 +726,13 @@
 
     function aplicarOffset() { promTrack.style.transform = 'translateY(' + (-scrollState.offset) + 'px)'; }
 
+    function atualizarProgresso() {
+      // Quanto da pauta já passou: offset / (altura total rolável)
+      const total = promTrack.scrollHeight - window.innerHeight;
+      const pct = total > 0 ? Math.min(100, Math.max(0, (scrollState.offset / total) * 100)) : 0;
+      $('#promProgressoBar').style.width = pct + '%';
+    }
+
     function togglePlay() {
       scrollState.playing = !scrollState.playing;
       const b = $('#btnPlay');
@@ -785,6 +803,7 @@
         scrollState.offset = 0; // Volta ao início absoluto se não houver anterior
       }
       aplicarOffset();
+      atualizarProgresso();
       pushLive(true); // sincroniza salto de bloco (posição)
     }
 
@@ -794,6 +813,7 @@
         const delta = Math.min(ts - lastTime, 50); // cap 50ms evita salto após tab em background
         scrollState.offset += Settings.velocidade * (delta / 16.667);
         aplicarOffset();
+        atualizarProgresso();
       }
       lastTime = ts;
       pollGamepad();
@@ -813,6 +833,48 @@
     $('#btnDesce').addEventListener('click', () => ajustarVelocidade(-0.1));
     $('#btnPrev').addEventListener('click', () => pularBloco(-1));
     $('#btnNext').addEventListener('click', () => pularBloco(1));
+
+    /* ===== CONTROLE POR TOQUE NA TELA DO PROMPTER ===== */
+    // Toque simples = play/pause. Arrastar na vertical = ajustar velocidade.
+    (function gestosToque() {
+      const touchEl = $('#promTouch');
+      let startY = 0, startX = 0, startVel = 0, arrastou = false, tStart = 0;
+      const LIMIAR = 12; // px para começar a contar como arraste
+
+      function inicio(y, x) {
+        startY = y; startX = x; startVel = Settings.velocidade;
+        arrastou = false; tStart = Date.now();
+      }
+      function mover(y, x) {
+        const dy = startY - y;           // para cima = positivo = mais rápido
+        const dx = Math.abs(x - startX);
+        if (!arrastou && (Math.abs(dy) > LIMIAR || dx > LIMIAR)) arrastou = true;
+        if (!arrastou) return;
+        // 40px de arraste ≈ 1.0 de velocidade
+        let v = startVel + (dy / 40);
+        v = Math.min(10, Math.max(0.1, Math.round(v * 10) / 10));
+        if (v !== Settings.velocidade) {
+          Settings.velocidade = v;
+          $('#rngVel').value = v;
+          atualizarValores();
+          mostrarToastVelocidade();
+          atualizarRcStatus();
+        }
+      }
+      function fim() {
+        if (arrastou) { pushLive(); pushSettings(); }   // confirmou nova velocidade
+        else if (Date.now() - tStart < 400) togglePlay(); // toque rápido = play/pause
+      }
+
+      touchEl.addEventListener('touchstart', (e) => { const t = e.touches[0]; inicio(t.clientY, t.clientX); }, { passive: true });
+      touchEl.addEventListener('touchmove',  (e) => { const t = e.touches[0]; mover(t.clientY, t.clientX); }, { passive: true });
+      touchEl.addEventListener('touchend', fim);
+      // Mouse (para testar no desktop)
+      let mouseDown = false;
+      touchEl.addEventListener('mousedown', (e) => { mouseDown = true; inicio(e.clientY, e.clientX); });
+      touchEl.addEventListener('mousemove', (e) => { if (mouseDown) mover(e.clientY, e.clientX); });
+      touchEl.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; fim(); } });
+    })();
 
     /* ===== BLACKOUT ===== */
     function toggleBlackout() { $('#blackout').classList.toggle('hidden'); }
@@ -834,17 +896,48 @@
     $('#cPause').addEventListener('click', cronoPause);
     $('#cReset').addEventListener('click', cronoReset);
 
+    /* ===== WAKE LOCK (tela não apaga) + TRAVA DE ORIENTAÇÃO ===== */
+    let wakeLock = null;
+    async function ativarWakeLock() {
+      try {
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+      } catch (e) { /* alguns navegadores recusam fora de gesto/HTTPS */ }
+    }
+    async function liberarWakeLock() {
+      try { if (wakeLock) { await wakeLock.release(); wakeLock = null; } } catch (e) {}
+    }
+    // Reativa o wake lock se a aba volta a ficar visível durante a apresentação
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !prompterEl.classList.contains('hidden')) ativarWakeLock();
+    });
+
+    function travarPaisagem() {
+      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+    }
+    function destravarOrientacao() {
+      try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+    }
+
     /* ===== INICIAR / VOLTAR ===== */
     function iniciarPrompter() {
       lerSettings();
       montarPrompter();
       aplicarOffset();
+      atualizarProgresso();
       $('#blackout').classList.add('hidden');
       showPrompter();
+      ativarWakeLock();
+      travarPaisagem();
       pushLive(true);
     }
     $('#btnIniciar').addEventListener('click', iniciarPrompter);
-    $('#btnVoltar').addEventListener('click', () => { scrollState.playing = false; pushLive(true); showEditor(); });
+    $('#btnVoltar').addEventListener('click', () => {
+      scrollState.playing = false;
+      pushLive(true);
+      liberarWakeLock();
+      destravarOrientacao();
+      showEditor();
+    });
 
     /* ===== ARQUIVOS ===== */
     function salvarPauta() {
@@ -1009,6 +1102,7 @@
         if (typeof live.offset === 'number') {
           scrollState.offset = live.offset;
           aplicarOffset();
+          atualizarProgresso();
         }
       }
       aplicandoRemoto = false;
