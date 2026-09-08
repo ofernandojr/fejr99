@@ -262,6 +262,20 @@
     }
     #speedToast.fade { opacity: 0; }
 
+    /* Barra de comandos some sozinha quando ninguem mexe, como num player
+       de video. Volta ao primeiro toque ou movimento do mouse. */
+    .prom-controles, .btn-voltar, #syncIndicador, #ponteiroVirtual {
+      transition: opacity .35s ease;
+    }
+    #prompter.sem-barra .prom-controles,
+    #prompter.sem-barra .btn-voltar,
+    #prompter.sem-barra #syncIndicador,
+    #prompter.sem-barra #ponteiroVirtual {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #prompter.sem-barra { cursor: none; }
+
     #promDica {
       position: fixed; bottom: calc(92px + var(--safe-bottom)); left: 50%;
       transform: translateX(-50%); z-index: 1004; max-width: 90vw; text-align: center;
@@ -923,9 +937,13 @@
       let startY = 0, startX = 0, startOffset = 0, arrastou = false, tStart = 0;
       const LIMIAR = 12; // px para comecar a contar como arraste
 
+      let soReapareceu = false;
       function inicio(y, x) {
         startY = y; startX = x; startOffset = scrollState.offset;
         arrastou = false; tStart = Date.now();
+        // Guarda ANTES de reexibir: se a barra estava oculta, este toque serve
+        // apenas para traze-la de volta e nao deve dar play/pause.
+        soReapareceu = mostrarBarra();
       }
       function mover(y, x) {
         const dy = startY - y;   // arrastar para cima avanca a pauta
@@ -935,6 +953,7 @@
       }
       function fim() {
         if (arrastou) pushLive(true);                     // posicao final exata
+        else if (soReapareceu) { /* so trouxe a barra de volta */ }
         else if (Date.now() - tStart < 400) togglePlay(); // toque rapido = play/pause
       }
 
@@ -1023,6 +1042,7 @@
 
     // ----- Movimento: o ponteiro anda ao contrario do cursor real -----
     let arrY = 0, arrOffset = 0, arrBaixo = false, arrArrastou = false, arrT0 = 0;
+    let arrSoReapareceu = false;
 
     // Usa pointermove, nao mousemove: o evento traz o pointerType, entao o
     // movimento do mouse nao depende de ter havido um clique antes. Com
@@ -1055,6 +1075,7 @@
       e.preventDefault(); e.stopPropagation();
       arrBaixo = true; arrArrastou = false;
       arrY = ponteiro.y; arrOffset = scrollState.offset; arrT0 = Date.now();
+      arrSoReapareceu = mostrarBarra();
     }, true);
 
     document.addEventListener('mouseup', (e) => {
@@ -1077,6 +1098,7 @@
       // caminho, o clique real passava batido e caia no editor - em cima do
       // INICIAR TELEPROMPTER, que reabria o prompter na hora.
       setTimeout(() => {
+        if (arrSoReapareceu) return;   // o clique so trouxe a barra de volta
         if (botao) {
           reenviandoClique = true;
           try { botao.click(); } finally { reenviandoClique = false; }
@@ -1138,6 +1160,44 @@
       try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     }
 
+    /* ===== BARRA DE COMANDOS QUE SOME SOZINHA ===== */
+    // Sem mexer na tela por alguns segundos, os controles somem e fica so o
+    // texto. Qualquer toque, movimento de mouse, roda ou tecla traz de volta.
+    const ESPERA_BARRA = 3000;
+    let barraTimeout = null;
+    let barraVisivel = true;
+
+    function ocultarBarra() {
+      if (prompterEl.classList.contains('hidden')) return;
+      barraVisivel = false;
+      prompterEl.classList.add('sem-barra');
+    }
+
+    // Devolve true quando a barra ESTAVA oculta, ou seja, quando o gesto so
+    // serviu para trazer os controles de volta.
+    function mostrarBarra() {
+      const estavaOculta = !barraVisivel;
+      barraVisivel = true;
+      prompterEl.classList.remove('sem-barra');
+      clearTimeout(barraTimeout);
+      barraTimeout = setTimeout(ocultarBarra, ESPERA_BARRA);
+      return estavaOculta;
+    }
+
+    function pararRelogioDaBarra() {
+      clearTimeout(barraTimeout);
+      barraTimeout = null;
+      barraVisivel = true;
+      prompterEl.classList.remove('sem-barra');
+    }
+
+    ['pointermove', 'pointerdown', 'touchstart', 'wheel'].forEach((evt) => {
+      prompterEl.addEventListener(evt, () => { mostrarBarra(); }, { passive: true });
+    });
+    document.addEventListener('keydown', () => {
+      if (!prompterEl.classList.contains('hidden')) mostrarBarra();
+    });
+
     /* ===== DICA DE USO NO PROMPTER ===== */
     let dicaTimeout = null;
     function mostrarDicaPrompter() {
@@ -1159,6 +1219,7 @@
       $('#blackout').classList.add('hidden');
       showPrompter();
       sincronizarPonteiro();
+      mostrarBarra();
       mostrarDicaPrompter();
       ativarWakeLock();
       travarPaisagem();
@@ -1170,6 +1231,7 @@
       pushLive(true);
       liberarWakeLock();
       destravarOrientacao();
+      pararRelogioDaBarra();
       showEditor();
       sincronizarPonteiro();
     });

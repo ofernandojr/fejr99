@@ -29,6 +29,10 @@ Na tela do prompter:
 No **Passo 2** cada bloco aparece numerado e com o texto inteiro. Toque no
 texto para abrir ou fechar o bloco todo, e no ✎ para editar numa caixa grande.
 
+Sem mexer na tela por **3 segundos**, os botões e o VOLTAR somem e fica só o
+texto, como num player de vídeo. Qualquer toque, movimento de mouse ou tecla traz
+tudo de volta — e esse primeiro toque **só faz reaparecer**, não pausa a leitura.
+
 O texto fica salvo sozinho no aparelho. Fechar o app não apaga nada.
 
 ### Trazer o texto de um arquivo
