@@ -70,33 +70,80 @@ Um aparelho vira o **servidor**: ele guarda o texto e repassa tudo para o outro.
 
 ### Instalar (uma vez só, no aparelho que vai comandar)
 
-1. Instale o **Termux** (recomendado pela F-Droid).
-2. Abra o Termux e cole, uma linha de cada vez:
+Instale o **Termux** (recomendado pela F-Droid), abra e cole os comandos abaixo
+**um de cada vez**, esperando cada um terminar.
 
-   ```sh
-   pkg update && pkg install nodejs git netcat-openbsd
-   ```
+> **Atenção ao til (`~`).** Em vários teclados de tablet ele sai como `-` e o
+> comando quebra com `OLDPWD not set`. Por isso os comandos aqui usam `$HOME`
+> no lugar de `~`. Digite `$HOME` mesmo, com o cifrão.
 
-   ```sh
-   git clone https://github.com/ofernandojr/tptvweb.git
-   ```
+**1. Instalar os programas**
 
-   ```sh
-   cd tptvweb && sh scripts/instalar-atalhos.sh
-   ```
+```sh
+pkg update && pkg install nodejs git netcat-openbsd
+```
 
-3. Instale também os apps **Termux:Widget** e **Termux:Boot** (mesma loja).
-4. Na tela inicial do aparelho: segure o dedo num espaço vazio → **Widgets** →
-   **Termux:Widget**. Vão aparecer três atalhos:
+Quando perguntar `Continue? [Y/n]`, responda `y` e Enter. Se responder que já
+estão na versão mais nova, está certo — pode seguir.
 
-   | Atalho | Para que serve | Em qual aparelho |
-   | --- | --- | --- |
-   | **Iniciar Servidor** | Liga o servidor | No que comanda |
-   | **Conectar Tp** | Acha o servidor e abre o app | No que exibe |
-   | **Atualizar Tp** | Baixa a versão nova | No que comanda |
+> O `netcat-openbsd` é o que fornece o comando `nc`, usado pelos atalhos para
+> achar o servidor. Cuidado com a digitação: é `netcat-open**b**sd`.
 
-5. Abra o **Termux:Boot** uma vez. Assim o servidor sobe sozinho quando o
-   aparelho liga.
+**2. Baixar o projeto**
+
+```sh
+git clone https://github.com/ofernandojr/tptvweb.git
+```
+
+Se aparecer `destination path 'tptvweb' already exists`, é porque você já
+baixou antes. Nesse caso, em vez de baixar de novo, atualize:
+
+```sh
+cd $HOME/tptvweb && git pull
+```
+
+**3. Instalar os atalhos**
+
+```sh
+cd $HOME/tptvweb && sh scripts/instalar-atalhos.sh
+```
+
+**4. Conferir que deu certo**
+
+```sh
+cd $HOME/tptvweb && ls scripts
+```
+
+Tem que listar `atualizar-tp.sh`, `conectar-tp.sh`, `iniciar-tp.sh` e
+`instalar-atalhos.sh`.
+
+**5. Widgets**
+
+Instale também os apps **Termux:Widget** e **Termux:Boot** (mesma loja do
+Termux). Depois, na tela inicial do aparelho: segure o dedo num espaço vazio →
+**Widgets** → **Termux:Widget**. Vão aparecer três atalhos:
+
+| Atalho | Para que serve | Em qual aparelho |
+| --- | --- | --- |
+| **Iniciar Servidor** | Liga o servidor | No que comanda |
+| **Conectar Tp** | Acha o servidor e abre o app | No que exibe |
+| **Atualizar Tp** | Baixa a versão nova | No que comanda |
+
+**6. Início automático**
+
+Abra o **Termux:Boot** uma vez. A partir daí o servidor sobe sozinho quando o
+aparelho liga.
+
+### Se algo der errado na instalação
+
+| O que apareceu | O que fazer |
+| --- | --- |
+| `Unable to locate package netcat-opensd` | Faltou o **b**: é `netcat-openbsd`. |
+| `bash: cd: OLDPWD not set` | Seu teclado trocou `~` por `-`. Use `$HOME`. |
+| `destination path 'tptvweb' already exists` | Já está baixado. Use `cd $HOME/tptvweb && git pull`. |
+| `No command run found` | Você digitou a frase `Run 'apt list --upgradable'`, que é só um aviso do Termux, não um comando. Ignore. |
+| `22 packages can be upgraded` | Só um aviso. Não precisa fazer nada. |
+| `Authentication failed` no `git clone` | O repositório precisa estar público. Confira em <https://github.com/ofernandojr/tptvweb>. |
 
 ### Usar no dia a dia
 
@@ -143,14 +190,14 @@ em **Iniciar Servidor** de novo e recarregue a página nos dois aparelhos.
 Pelo Termux, na mão:
 
 ```sh
-cd ~/tptvweb && git pull
+cd $HOME/tptvweb && git pull
 ```
 
 Se o `git pull` reclamar de arquivos alterados no aparelho, isto descarta as
 alterações locais e deixa igual ao GitHub (apaga o que foi mudado ali):
 
 ```sh
-cd ~/tptvweb && git fetch origin && git reset --hard origin/main
+cd $HOME/tptvweb && git fetch origin && git reset --hard origin/main
 ```
 
 ---
