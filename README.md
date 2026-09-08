@@ -31,6 +31,20 @@ O texto fica salvo sozinho no aparelho. Fechar o app não apaga nada.
 > **Espelhar texto** já vem ligado. Isso é para quem usa um vidro/espelho na
 > frente da câmera. Se você lê direto da tela, desligue no Passo 3.
 
+### Mouse com o aparelho girado 180°
+
+Em suporte de teleprompter o aparelho costuma ficar de cabeça para baixo. Aí o
+cursor anda ao contrário: a mão vai para a direita e ele vai para a esquerda.
+
+Marque **Corrigir o mouse** no Passo 3. Dentro do prompter, o cursor do sistema
+é escondido e o app passa a desenhar o próprio ponteiro (uma cruz branca), que
+anda no sentido certo. O clique vale para o botão que está sob essa cruz.
+
+Só vale dentro do prompter — na tela de edição o mouse continua como sempre.
+
+> O navegador não consegue inverter o cursor do sistema; por isso o app desenha
+> um ponteiro próprio em vez de tentar mexer no do Android.
+
 ---
 
 ## Usar em dois aparelhos

@@ -267,6 +267,20 @@
 
     #blackout { position: fixed; inset: 0; background: #000; z-index: 1001; }
 
+    /* Ponteiro desenhado pelo app (modo aparelho girado 180 graus) */
+    #prompter.mouse-girado { cursor: none; }
+    #prompter.mouse-girado * { cursor: none !important; }
+    #ponteiroVirtual {
+      position: fixed; left: 0; top: 0; z-index: 1010; pointer-events: none;
+      width: 30px; height: 30px; margin: -15px 0 0 -15px; will-change: transform;
+    }
+    #ponteiroVirtual::before, #ponteiroVirtual::after {
+      content: ''; position: absolute; background: #fff;
+      box-shadow: 0 0 4px rgba(0,0,0,.95);
+    }
+    #ponteiroVirtual::before { left: 13px; top: 0; width: 4px; height: 30px; }
+    #ponteiroVirtual::after  { top: 13px; left: 0; height: 4px; width: 30px; }
+
     .espelha-ui .prom-controles { transform: translateX(-50%) scaleX(-1); flex-direction: row-reverse; }
     .espelha-ui .btn-voltar, .espelha-ui #speedToast { transform: scaleX(-1); }
     .espelha-ui .prom-aviso { transform: translateY(-50%) scaleX(-1); }
@@ -383,7 +397,7 @@
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
       <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
-      <label class="chk hidden" id="labelInverterMouse"><input type="checkbox" id="chkInverterMouse"> Inverter a rolagem do mouse</label>
+      <label class="chk hidden" id="labelMouseGirado"><input type="checkbox" id="chkMouseGirado"> Corrigir o mouse <small>(marque se o aparelho fica girado 180° no suporte)</small></label>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
@@ -449,6 +463,7 @@
     </div>
 
     <div id="blackout" class="hidden"></div>
+    <div id="ponteiroVirtual" class="hidden"></div>
 
   </div>
 
@@ -827,63 +842,167 @@
     $('#btnNext').addEventListener('click', () => pularBloco(1));
 
     /* ===== ROLAGEM MANUAL (TOQUE E MOUSE) ===== */
-    // Toque rápido = play/pause. Arrastar na vertical = rolar a pauta.
-    // A roda do mouse também rola. A velocidade fica só nos botões +/-.
-    let inverterMouse = localStorage.getItem('tvweb_inverterMouse') === '1';
+    // Toque rapido = play/pause. Arrastar na vertical = rolar a pauta.
+    // A roda do mouse tambem rola. A velocidade fica so nos botoes +/-.
 
     function rolarPara(novoOffset) {
       scrollState.offset = Math.max(0, novoOffset);
       aplicarOffset();
       atualizarProgresso();
-      pushLiveThrottled(true); // a posição vale para todos, em tempo real
+      pushLiveThrottled(true); // a posicao vale para todos, em tempo real
     }
 
     (function gestosRolagem() {
       const touchEl = $('#promTouch');
       let startY = 0, startX = 0, startOffset = 0, arrastou = false, tStart = 0;
-      const LIMIAR = 12; // px para começar a contar como arraste
+      const LIMIAR = 12; // px para comecar a contar como arraste
 
       function inicio(y, x) {
         startY = y; startX = x; startOffset = scrollState.offset;
         arrastou = false; tStart = Date.now();
       }
-      function mover(y, x, ehMouse) {
-        const dy = startY - y;   // arrastar para cima avança a pauta
+      function mover(y, x) {
+        const dy = startY - y;   // arrastar para cima avanca a pauta
         if (!arrastou && (Math.abs(dy) > LIMIAR || Math.abs(x - startX) > LIMIAR)) arrastou = true;
         if (!arrastou) return;
-        const sinal = (ehMouse && inverterMouse) ? -1 : 1;
-        rolarPara(startOffset + dy * sinal);
+        rolarPara(startOffset + dy);
       }
       function fim() {
-        if (arrastou) pushLive(true);                     // posição final exata
-        else if (Date.now() - tStart < 400) togglePlay(); // toque rápido = play/pause
+        if (arrastou) pushLive(true);                     // posicao final exata
+        else if (Date.now() - tStart < 400) togglePlay(); // toque rapido = play/pause
       }
 
       touchEl.addEventListener('touchstart', (e) => { const t = e.touches[0]; inicio(t.clientY, t.clientX); }, { passive: true });
-      touchEl.addEventListener('touchmove',  (e) => { const t = e.touches[0]; mover(t.clientY, t.clientX, false); }, { passive: true });
+      touchEl.addEventListener('touchmove',  (e) => { const t = e.touches[0]; mover(t.clientY, t.clientX); }, { passive: true });
       touchEl.addEventListener('touchend', fim);
 
+      // Mouse comum (sem a correcao de 180 graus)
       let mouseDown = false;
-      touchEl.addEventListener('mousedown', (e) => { mouseDown = true; inicio(e.clientY, e.clientX); });
-      touchEl.addEventListener('mousemove', (e) => { if (mouseDown) mover(e.clientY, e.clientX, true); });
+      touchEl.addEventListener('mousedown', (e) => { if (mouseGiradoAtivo()) return; mouseDown = true; inicio(e.clientY, e.clientX); });
+      touchEl.addEventListener('mousemove', (e) => { if (mouseDown) mover(e.clientY, e.clientX); });
       touchEl.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; fim(); } });
       touchEl.addEventListener('mouseleave', () => { if (mouseDown) { mouseDown = false; fim(); } });
 
-      // Roda do mouse
       touchEl.addEventListener('wheel', (e) => {
         e.preventDefault();
-        rolarPara(scrollState.offset + e.deltaY * (inverterMouse ? -1 : 1));
+        rolarPara(scrollState.offset + e.deltaY * (mouseGiradoAtivo() ? -1 : 1));
       }, { passive: false });
     })();
 
-    /* ===== INVERTER MOUSE (só aparece quando há um ponteiro fino) ===== */
-    (function opcaoInverterMouse() {
-      const temMouse = window.matchMedia && window.matchMedia('(any-pointer: fine)').matches;
-      $('#labelInverterMouse').classList.toggle('hidden', !temMouse);
-      $('#chkInverterMouse').checked = inverterMouse;
-      $('#chkInverterMouse').addEventListener('change', () => {
-        inverterMouse = $('#chkInverterMouse').checked;
-        localStorage.setItem('tvweb_inverterMouse', inverterMouse ? '1' : '0');
+    /* ============================================================
+       ===== MOUSE COM O APARELHO GIRADO 180 GRAUS =====
+       ============================================================
+       Com o tablet de cabeca para baixo no suporte, o cursor do
+       sistema anda ao contrario: a mao vai para a direita e ele vai
+       para a esquerda. A pagina NAO consegue mexer no cursor do
+       sistema - entao, dentro do prompter, ele e escondido e o app
+       desenha o proprio ponteiro, andando no sentido certo. O clique
+       e entregue ao elemento que esta sob ESSE ponteiro.
+
+       Com Pointer Lock o cursor real fica preso e o movimento nao
+       trava nas bordas da tela. Sem ele, funciona igual, mas o
+       ponteiro pode empacar quando o cursor real chega na borda.
+    */
+    let mouseGirado = localStorage.getItem('tvweb_mouseGirado') === '1';
+    const ponteiro = { x: 0, y: 0 };
+    let ponteiroLigado = false, reenviandoClique = false;
+
+    function temMouse() {
+      return !!(window.matchMedia && window.matchMedia('(any-pointer: fine)').matches);
+    }
+    function mouseGiradoAtivo() {
+      return mouseGirado && !prompterEl.classList.contains('hidden');
+    }
+
+    function desenharPonteiro() {
+      $('#ponteiroVirtual').style.transform =
+        'translate(' + ponteiro.x + 'px,' + ponteiro.y + 'px)';
+    }
+
+    function ligarPonteiro() {
+      if (ponteiroLigado) return;
+      ponteiroLigado = true;
+      ponteiro.x = window.innerWidth / 2;
+      ponteiro.y = window.innerHeight / 2;
+      prompterEl.classList.add('mouse-girado');
+      $('#ponteiroVirtual').classList.remove('hidden');
+      desenharPonteiro();
+      // Prende o cursor real; se o navegador recusar, o modo sem trava serve.
+      try { if (prompterEl.requestPointerLock) prompterEl.requestPointerLock(); } catch (e) {}
+    }
+
+    function desligarPonteiro() {
+      if (!ponteiroLigado) return;
+      ponteiroLigado = false;
+      prompterEl.classList.remove('mouse-girado');
+      $('#ponteiroVirtual').classList.add('hidden');
+      try { if (document.exitPointerLock) document.exitPointerLock(); } catch (e) {}
+    }
+
+    function sincronizarPonteiro() {
+      if (mouseGiradoAtivo() && temMouse()) ligarPonteiro();
+      else desligarPonteiro();
+    }
+
+    // ----- Movimento: o ponteiro anda ao contrario do cursor real -----
+    let arrY = 0, arrOffset = 0, arrBaixo = false, arrArrastou = false, arrT0 = 0;
+
+    document.addEventListener('mousemove', (e) => {
+      if (!ponteiroLigado) return;
+      const dx = e.movementX || 0, dy = e.movementY || 0;
+      ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, ponteiro.x - dx));
+      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y - dy));
+      desenharPonteiro();
+      if (arrBaixo) {
+        const d = arrY - ponteiro.y;
+        if (!arrArrastou && Math.abs(d) > 12) arrArrastou = true;
+        if (arrArrastou) rolarPara(arrOffset + d);
+      }
+    }, true);
+
+    document.addEventListener('mousedown', (e) => {
+      if (!ponteiroLigado || reenviandoClique) return;
+      e.preventDefault(); e.stopPropagation();
+      arrBaixo = true; arrArrastou = false;
+      arrY = ponteiro.y; arrOffset = scrollState.offset; arrT0 = Date.now();
+    }, true);
+
+    document.addEventListener('mouseup', (e) => {
+      if (!ponteiroLigado || reenviandoClique) return;
+      e.preventDefault(); e.stopPropagation();
+      if (!arrBaixo) return;
+      arrBaixo = false;
+      if (arrArrastou) { pushLive(true); return; }
+
+      // Clique: vale o que esta embaixo do ponteiro desenhado, nao do cursor real.
+      const alvo = document.elementFromPoint(ponteiro.x, ponteiro.y);
+      const botao = alvo && alvo.closest ? alvo.closest('button') : null;
+      if (botao) {
+        reenviandoClique = true;
+        botao.click();
+        reenviandoClique = false;
+      } else if (Date.now() - arrT0 < 400) {
+        togglePlay(); // clique na area livre = play/pausa
+      }
+    }, true);
+
+    // Engole o clique original (ele cairia na posicao do cursor real). So vale
+    // para clique de verdade: clique vindo do teclado ou do proprio codigo
+    // (isTrusted false) tem de passar, senao botoes como o VOLTAR travam.
+    document.addEventListener('click', (e) => {
+      if (ponteiroLigado && !reenviandoClique && e.isTrusted) {
+        e.preventDefault(); e.stopPropagation();
+      }
+    }, true);
+
+    /* ===== OPCAO NOS AJUSTES (so aparece se houver mouse) ===== */
+    (function opcaoMouseGirado() {
+      $('#labelMouseGirado').classList.toggle('hidden', !temMouse());
+      $('#chkMouseGirado').checked = mouseGirado;
+      $('#chkMouseGirado').addEventListener('change', () => {
+        mouseGirado = $('#chkMouseGirado').checked;
+        localStorage.setItem('tvweb_mouseGirado', mouseGirado ? '1' : '0');
+        sincronizarPonteiro();
       });
     })();
 
@@ -935,6 +1054,7 @@
       atualizarProgresso();
       $('#blackout').classList.add('hidden');
       showPrompter();
+      sincronizarPonteiro();
       mostrarDicaPrompter();
       ativarWakeLock();
       travarPaisagem();
@@ -947,6 +1067,7 @@
       liberarWakeLock();
       destravarOrientacao();
       showEditor();
+      sincronizarPonteiro();
     });
 
     /* ===== ARQUIVOS ===== */
