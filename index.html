@@ -60,19 +60,7 @@
     #listaPauta li .b-edit { background: #1877F2; }
     #listaPauta li .b-del  { background: #f02849; }
 
-    /* ── Sincronização (status interno) ── */
-    .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
-    .sync-status .dot { width: 8px; height: 8px; border-radius: 50%; background: #aaa; }
-    .sync-status.on  { background: #e6f7ea; color: #1a7f37; } .sync-status.on  .dot { background: #1a7f37; }
-    .sync-status.off { background: #f1f1f1; color: #888;    } .sync-status.off .dot { background: #aaa;    }
-    .sync-status.err { background: #fdeaea; color: #c0392b; } .sync-status.err .dot { background: #c0392b; }
-    .sync-row { display: flex; gap: 8px; }
-    #inputSala { flex: 1; min-height: 48px; padding: 0 12px; border: 1.5px solid #dde; border-radius: 10px; font-size: 16px; }
-    #btnConectar { min-height: 48px; padding: 0 18px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; color: #fff; background: #1877F2; cursor: pointer; }
-    #btnConectar.conectado { background: #f02849; }
-    .sync-dica { font-size: 12px; color: #999; margin: 0; }
-
-    /* ── Offline / QR / Servidor ── */
+    /* ── QR de acesso / Servidor local ── */
     .offline-box { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
     .offline-box .of-titulo { font-weight: 700; font-size: 15px; }
     .offline-box .of-dica   { font-size: 12px; color: #999; margin: 0; line-height: 1.4; }
@@ -446,14 +434,6 @@
     </div>
   </div>
 
-  <!-- ===== SCANNER DE CÂMERA (QR) ===== -->
-  <div id="scanner">
-    <div id="scanMsg">Aponte a câmera para o QR Code</div>
-    <video id="scanVideo" playsinline muted></video>
-    <div id="scanGuia"></div>
-    <button id="btnScanCancel">Cancelar</button>
-  </div>
-
   <!-- ===== CUSTOM MODAL ===== -->
   <div id="customModal" class="hidden">
     <div class="modal-content">
@@ -466,14 +446,8 @@
     </div>
   </div>
 
-  <!-- ===== BIBLIOTECAS LOCAIS (funcionam offline) ===== -->
-  <script src="libs/lz-string.min.js"></script>
+  <!-- ===== BIBLIOTECA LOCAL (gerador de QR de acesso) ===== -->
   <script src="libs/qrcode.min.js"></script>
-  <script src="libs/jsQR.min.js"></script>
-
-  <!-- ===== FIREBASE (SDK compat via CDN — só funciona com internet) ===== -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <!-- ===== REGISTRO DO SERVICE WORKER (cache offline / PWA) ===== -->
   <script>
@@ -481,41 +455,6 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW falhou:', e));
       });
-    }
-  </script>
-
-  <script>
-    /* ============================================================
-       CONFIGURAÇÃO DO FIREBASE  ←  COLE SUAS CHAVES AQUI
-       ------------------------------------------------------------
-       1. Acesse https://console.firebase.google.com
-       2. Crie um projeto (gratuito) e ative o "Realtime Database".
-       3. Em Configurações do projeto > Seus apps > App da Web,
-          copie o objeto firebaseConfig e cole abaixo.
-       4. Em Realtime Database > Regras, use (apenas para teste):
-            { "rules": { ".read": true, ".write": true } }
-       Enquanto os campos estiverem vazios, o app funciona normal,
-       só SEM sincronização entre tablets (modo offline).
-       ============================================================ */
-    const firebaseConfig = {
-      apiKey: "",
-      authDomain: "",
-      databaseURL: "",
-      projectId: "",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: ""
-    };
-
-    const FIREBASE_OK = !!(firebaseConfig.apiKey && firebaseConfig.databaseURL);
-    let fbDB = null;
-    if (FIREBASE_OK) {
-      try {
-        firebase.initializeApp(firebaseConfig);
-        fbDB = firebase.database();
-      } catch (err) {
-        console.error('Erro ao iniciar Firebase:', err);
-      }
     }
   </script>
 
@@ -557,7 +496,16 @@
     }
 
     /* ===== PAUTA ===== */
+    // Guardada no próprio dispositivo para não sumir ao fechar o app.
     let Pauta = [];
+    try {
+      const salvo = JSON.parse(localStorage.getItem('tvweb_pauta') || '[]');
+      if (Array.isArray(salvo)) Pauta = salvo.map(t => String(t).toUpperCase());
+    } catch (e) {}
+
+    function salvarPautaLocal() {
+      try { localStorage.setItem('tvweb_pauta', JSON.stringify(Pauta)); } catch (e) {}
+    }
 
     function renderLista() {
       const ul = $('#listaPauta');
@@ -634,6 +582,22 @@
       localStorage.setItem('tvweb_modoControle', modoControle ? '1' : '0');
     });
 
+    function salvarSettingsLocal() {
+      try { localStorage.setItem('tvweb_settings', JSON.stringify(Settings)); } catch (e) {}
+    }
+
+    // Restaura os ajustes salvos neste dispositivo
+    try {
+      const s = JSON.parse(localStorage.getItem('tvweb_settings') || 'null');
+      if (s) {
+        if (typeof s.fonte === 'number')      $('#rngFonte').value = s.fonte;
+        if (typeof s.margem === 'number')     $('#rngMargem').value = s.margem;
+        if (typeof s.velocidade === 'number') $('#rngVel').value = s.velocidade;
+        if (typeof s.espelho === 'boolean')   $('#chkEspelho').checked = s.espelho;
+        if (typeof s.espelhoUI === 'boolean') $('#chkEspelhoUI').checked = s.espelhoUI;
+      }
+    } catch (e) {}
+
     ['#rngFonte', '#rngMargem', '#rngVel', '#chkEspelho', '#chkEspelhoUI'].forEach(sel =>
       $(sel).addEventListener('input', () => {
         lerSettings();
@@ -679,7 +643,7 @@
     function atualizarRcStatus() {
       const el = $('#rcSync');
       if (!el) return;
-      const ok = conectado || rtcConectado || srvConectado;
+      const ok = srvConectado;
       el.textContent = ok ? '⬤ Sincronizado' : '⬤ Desconectado';
       el.classList.toggle('on', ok);
       $('#rcVelVal').textContent = Settings.velocidade.toFixed(1);
@@ -692,7 +656,7 @@
     $('#rcVelUp').addEventListener('click', () => { ajustarVelocidade(0.1); atualizarRcStatus(); });
     $('#rcBlackout').addEventListener('click', () => {
       toggleBlackout();
-      $('#rcBlackout').classList.toggle('ativo');
+      $('#rcBlackout').classList.toggle('ativo', !$('#blackout').classList.contains('hidden'));
     });
     $('#rcVoltar').addEventListener('click', () => aplicarPapel('exibicao'));
 
@@ -877,7 +841,10 @@
     })();
 
     /* ===== BLACKOUT ===== */
-    function toggleBlackout() { $('#blackout').classList.toggle('hidden'); }
+    function toggleBlackout() {
+      $('#blackout').classList.toggle('hidden');
+      pushLive(); // o blackout vale para todos os dispositivos da sessão
+    }
 
     /* ===== CRONÓMETRO ===== */
     let cronoSegundos = 0, cronoInterval = null;
@@ -976,51 +943,33 @@
     });
 
     /* ============================================================
-       ===== SINCRONIZAÇÃO EM TEMPO REAL (FIREBASE) =====
+       ===== SINCRONIZAÇÃO EM TEMPO REAL (SERVIDOR LOCAL) =====
        ============================================================
-       Estrutura no banco:
-         salas/{sala}/pauta     -> array de blocos
-         salas/{sala}/settings  -> { fonte, margem, velocidade, espelho, espelhoUI }
-         salas/{sala}/live      -> { playing, offset, velocidade, prompter, gen, by }
-       Cada dispositivo escreve suas mudanças e ouve as dos outros.
-       A flag "aplicandoRemoto" evita o eco (não reescrever o que acabou
-       de chegar do banco).
+       Todo o estado compartilhado passa pelo servidor local
+       (server.js, rodando no Termux de um dos dispositivos):
+         pauta     -> array de blocos
+         settings  -> { fonte, margem, velocidade, espelho, espelhoUI }
+         live      -> { playing, offset, velocidade, prompter, gen, by }
+       Cada dispositivo envia suas mudanças por POST /update e ouve as
+       dos outros por SSE em /events. A flag "aplicandoRemoto" evita o
+       eco (não reenviar o que acabou de chegar do servidor).
     */
     const CLIENT_ID = Math.random().toString(36).slice(2);
-    let salaRef = null;        // referência da sala atual
-    let conectado = false;
     let aplicandoRemoto = false;
     let liveGen = 0;           // contador de "saltos"/resets para forçar realinhamento
-
-    // WebRTC removido; variáveis mantidas para não quebrar pushPauta/pushSettings/pushLive
-    const rtcConectado = false;
-    const rtcChannel = null;
-    function enviarRTC() {}
 
     // Estado do servidor local (SSE)
     let srvBase = null, srvEvents = null, srvConectado = false, srvRecebeuPauta = false;
 
-    function setSyncStatus(estado, texto) {
-      const el = $('#syncStatus');
-      if (!el) return;
-      el.classList.remove('on', 'off', 'err');
-      el.classList.add(estado);
-      const txt = $('#syncStatusTxt');
-      if (txt) txt.textContent = texto;
-    }
-
     function atualizarIndicadorPrompter() {
-      $('#syncIndicador').classList.toggle('hidden', !(conectado || rtcConectado || srvConectado));
+      $('#syncIndicador').classList.toggle('hidden', !srvConectado);
       atualizarRcStatus();
     }
 
     // ----- ESCRITAS (deste dispositivo para os outros) -----
-    // Enviadas para o Firebase (se conectado a uma sala) E/OU para o
-    // par WebRTC (se conexão offline ativa).
     function pushPauta() {
       if (aplicandoRemoto) return;
-      if (salaRef) salaRef.child('pauta').set(Pauta);
-      enviarRTC('pauta', Pauta);
+      salvarPautaLocal();
       enviarSrv('pauta', Pauta);
     }
     function pushSettings() {
@@ -1029,8 +978,7 @@
         fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
         espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
       };
-      if (salaRef) salaRef.child('settings').set(s);
-      enviarRTC('settings', s);
+      salvarSettingsLocal();
       enviarSrv('settings', s);
     }
     // bumpGen = true quando a posição mudou (play, salto, voltar) e precisa realinhar os outros
@@ -1042,19 +990,19 @@
         offset: scrollState.offset,
         velocidade: Settings.velocidade,
         prompter: !prompterEl.classList.contains('hidden'),
+        blackout: !$('#blackout').classList.contains('hidden'),
         gen: liveGen,
         by: CLIENT_ID
       };
-      if (salaRef) salaRef.child('live').set(payload);
-      enviarRTC('live', payload);
       enviarSrv('live', payload);
     }
 
-    // ----- LEITURAS (do banco para este dispositivo) -----
+    // ----- LEITURAS (do servidor para este dispositivo) -----
     function aplicarPautaRemota(dados) {
       if (!Array.isArray(dados)) dados = [];
       Pauta = dados.map(t => String(t).toUpperCase());
       aplicandoRemoto = true;
+      salvarPautaLocal();
       renderLista();
       if (!prompterEl.classList.contains('hidden')) montarPrompter();
       aplicandoRemoto = false;
@@ -1069,6 +1017,7 @@
       if (typeof s.espelho === 'boolean')   { $('#chkEspelho').checked = s.espelho; }
       if (typeof s.espelhoUI === 'boolean') { $('#chkEspelhoUI').checked = s.espelhoUI; }
       lerSettings();
+      salvarSettingsLocal();
       // reflete espelhamento na hora se o prompter estiver aberto
       if (!prompterEl.classList.contains('hidden')) {
         prompterEl.classList.toggle('espelhado', Settings.espelho && !modoControle);
@@ -1089,6 +1038,12 @@
       }
 
       // play/pause
+      // blackout
+      if (typeof live.blackout === 'boolean') {
+        $('#blackout').classList.toggle('hidden', !live.blackout);
+        $('#rcBlackout').classList.toggle('ativo', live.blackout);
+      }
+
       if (typeof live.playing === 'boolean' && live.playing !== scrollState.playing) {
         scrollState.playing = live.playing;
         const b = $('#btnPlay');
@@ -1108,43 +1063,6 @@
       aplicandoRemoto = false;
       atualizarRcPlay();
       atualizarRcStatus();
-    }
-
-    // ----- FIREBASE: auto-conecta pela última sala salva (sem UI de sala) -----
-    function desconectarSala() {
-      if (salaRef) salaRef.off();
-      salaRef = null; conectado = false;
-      setSyncStatus('off', 'Offline');
-      atualizarIndicadorPrompter();
-    }
-
-    function conectarSala(nome) {
-      if (!FIREBASE_OK || !fbDB || !nome) return;
-      if (conectado) desconectarSala();
-      try {
-        salaRef = fbDB.ref('salas/' + nome);
-        setSyncStatus('on', 'Firebase: ' + nome);
-        conectado = true;
-        atualizarIndicadorPrompter();
-        localStorage.setItem('tvweb_sala', nome);
-        salaRef.child('pauta').once('value', (snap) => {
-          if (snap.exists()) aplicarPautaRemota(snap.val()); else pushPauta();
-        });
-        salaRef.child('settings').once('value', (snap) => {
-          if (snap.exists()) aplicarSettingsRemoto(snap.val()); else pushSettings();
-        });
-        salaRef.child('pauta').on('value',    (snap) => { if (snap.exists()) aplicarPautaRemota(snap.val()); });
-        salaRef.child('settings').on('value', (snap) => { if (snap.exists()) aplicarSettingsRemoto(snap.val()); });
-        salaRef.child('live').on('value',     (snap) => { if (snap.exists()) aplicarLiveRemoto(snap.val()); });
-      } catch (err) {
-        console.error(err); desconectarSala();
-      }
-    }
-
-    // Auto-conecta se havia sala salva
-    if (FIREBASE_OK) {
-      const ultima = localStorage.getItem('tvweb_sala');
-      if (ultima) conectarSala(ultima);
     }
 
     /* ===== QR DE ACESSO ===== */
@@ -1172,58 +1090,6 @@
       $('#qrAcessoUrl').textContent = url;
       qrBox.classList.add('show');
     });
-
-    /* ----- SCANNER DE CÂMERA (jsQR) ----- */
-    let scanStream = null, scanRAF = null, scanCallback = null;
-    const scanCanvas = document.createElement('canvas');
-    const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
-
-    function abrirScanner(callback) {
-      scanCallback = callback;
-      const video = $('#scanVideo');
-      $('#scanner').classList.add('show');
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then((stream) => {
-          scanStream = stream;
-          video.srcObject = stream;
-          video.play();
-          scanLoop();
-        })
-        .catch((e) => {
-          console.error(e);
-          fecharScanner();
-          showModal('Não foi possível acessar a câmera. Verifique a permissão e abra o app por HTTPS.', null);
-        });
-    }
-
-    function scanLoop() {
-      const video = $('#scanVideo');
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        scanCanvas.width = video.videoWidth;
-        scanCanvas.height = video.videoHeight;
-        scanCtx.drawImage(video, 0, 0, scanCanvas.width, scanCanvas.height);
-        const img = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-        if (code && code.data) {
-          const descomprimido = LZString.decompressFromEncodedURIComponent(code.data) || code.data;
-          const cb = scanCallback;
-          fecharScanner();
-          if (cb) cb(descomprimido);
-          return;
-        }
-      }
-      scanRAF = requestAnimationFrame(scanLoop);
-    }
-
-    function fecharScanner() {
-      if (scanRAF) cancelAnimationFrame(scanRAF);
-      scanRAF = null; scanCallback = null;
-      if (scanStream) { scanStream.getTracks().forEach((t) => t.stop()); scanStream = null; }
-      $('#scanVideo').srcObject = null;
-      $('#scanner').classList.remove('show');
-    }
-
-    $('#btnScanCancel').addEventListener('click', fecharScanner);
 
     /* ============================================================
        ===== SERVIDOR LOCAL (SINCRONIZAÇÃO VIA SSE) =====
@@ -1409,8 +1275,18 @@
         case 'down':     ajustarVelocidade(-0.1); break;
         case 'next':     pularBloco(1); break;
         case 'prev':     pularBloco(-1); break;
-        case 'blackout': toggleBlackout(); break;
+        case 'blackout':
+          toggleBlackout();
+          $('#rcBlackout').classList.toggle('ativo', !$('#blackout').classList.contains('hidden'));
+          break;
       }
+    }
+
+    // As ações valem no prompter E no painel de controle remoto — senão o
+    // controle Bluetooth ficaria morto no tablet que só controla.
+    function controlesAtivos() {
+      return !prompterEl.classList.contains('hidden') ||
+             !$('#painelControle').classList.contains('hidden');
     }
 
     function acaoPorBotao(predicate) {
@@ -1435,7 +1311,7 @@
         cancelarMapeamento();
         return;
       }
-      if (prompterEl.classList.contains('hidden')) return;
+      if (!controlesAtivos()) return;
       const id = acaoPorBotao(m => m.type === 'key' && m.code === e.code);
       if (id) { e.preventDefault(); dispararAcao(id); }
     });
@@ -1451,7 +1327,7 @@
         cancelarMapeamento();
         return;
       }
-      if (prompterEl.classList.contains('hidden')) return;
+      if (!controlesAtivos()) return;
       const id = acaoPorBotao(m => m.type === 'pad' && m.index === index);
       if (id) dispararAcao(id);
     }

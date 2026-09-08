@@ -1,14 +1,13 @@
 /* Service Worker — cache do app para funcionar offline.
-   Mantém o app servido pela origem HTTPS mesmo sem internet,
-   o que é necessário para a câmera (leitura de QR) e o WebRTC. */
-const CACHE = 'tvweb-prompter-v3';
+   Com o servidor local (server.js no Termux) o app já roda sem
+   internet; o cache serve para abrir rápido e sobreviver a quedas
+   momentâneas do servidor. */
+const CACHE = 'tvweb-prompter-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './libs/lz-string.min.js',
-  './libs/qrcode.min.js',
-  './libs/jsQR.min.js'
+  './libs/qrcode.min.js'
 ];
 
 self.addEventListener('install', (e) => {
