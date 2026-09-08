@@ -10,24 +10,6 @@ set -e
 # Caminho absoluto do projeto (a pasta acima de scripts/).
 PROJ="$(cd "$(dirname "$0")/.." && pwd)"
 
-# ── Pacote do QR Code ──
-# Digitar "qrencode" a mao erra facil (grencode, qrcode...). Como o instalador
-# ja esta rodando, ele mesmo resolve.
-if ! command -v qrencode >/dev/null 2>&1; then
-  echo "[..] Instalando o qrencode (desenha o QR de conexao)..."
-  pkg install -y qrencode >/dev/null 2>&1 || true
-  if command -v qrencode >/dev/null 2>&1; then
-    echo "[OK] qrencode instalado."
-  else
-    echo "[!]  Nao consegui instalar o qrencode."
-    echo "     Sem ele tudo funciona, so nao aparece o QR."
-    echo "     Para tentar de novo:  pkg install qrencode"
-  fi
-else
-  echo "[OK] qrencode ja instalado."
-fi
-echo ""
-
 mkdir -p "$HOME/.shortcuts" "$HOME/.termux/boot"
 
 # ── Atalhos de um toque (Termux:Widget) ──

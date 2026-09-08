@@ -2,9 +2,8 @@
 # TVWEB Prompter — Conectar ao servidor (aparelho de exibicao).
 # Procura o servidor na rede e abre o navegador direto no app.
 
+PROJ="$(cd "$(dirname "$0")/.." && pwd)"
 PORTA="${PORT:-8080}"
-# IPs tipicos do hotspot/roteador Android
-CANDIDATOS="192.168.43.1 192.168.49.1 192.168.1.1 192.168.0.1"
 
 clear
 echo "=============================================="
@@ -12,27 +11,13 @@ echo "        TVWEB PROMPTER — CONECTAR"
 echo "=============================================="
 echo ""
 echo "[..] Procurando o servidor na rede..."
+echo "     (varre a rede inteira; leva uns segundos)"
 
-# Testa se uma porta responde. Usa o proprio Node (que ja e obrigatorio
-# para o servidor) em vez do "nc": um pacote a menos para instalar, e sem
-# o risco de a deteccao falhar em silencio quando o netcat nao existe.
-porta_aberta() {  # $1=host  $2=porta
-  node -e '
-    const s = require("net").connect({ host: process.argv[1], port: +process.argv[2] });
-    s.setTimeout(1000);
-    s.on("connect", () => { s.destroy(); process.exit(0); });
-    s.on("timeout", () => { s.destroy(); process.exit(1); });
-    s.on("error",   () => process.exit(1));
-  ' "$1" "$2" 2>/dev/null
-}
-
-URL_ENCONTRADO=""
-for ip in $CANDIDATOS; do
-  if porta_aberta "$ip" "$PORTA"; then
-    URL_ENCONTRADO="http://$ip:$PORTA"
-    break
-  fi
-done
+# A busca e feita pelo Node: le as interfaces deste aparelho, varre a
+# sub-rede em paralelo e confirma que quem respondeu e mesmo o Prompter.
+# A versao antiga so testava 4 enderecos fixos e falhava em qualquer
+# rede fora deles.
+URL_ENCONTRADO=$(node "$PROJ/scripts/achar-servidor.js" "$PORTA" 2>/dev/null)
 
 echo ""
 echo "=============================================="
@@ -42,7 +27,7 @@ if [ -n "$URL_ENCONTRADO" ]; then
   echo ""
   echo "      >>>  $URL_ENCONTRADO  <<<"
   echo ""
-  am start -a android.intent.action.VIEW -d "$URL_ENCONTRADO" 2>/dev/null || true
+  am start -a android.intent.action.VIEW -d "$URL_ENCONTRADO" >/dev/null 2>&1 || true
   echo "  Abrindo o navegador..."
   echo ""
   echo "  Se o app abrir e mostrar"
@@ -59,9 +44,17 @@ else
   echo "  3. Este aparelho esta conectado nesse"
   echo "     hotspot (ou na mesma Wi-Fi)?"
   echo ""
-  echo "  Nao achou mesmo? Olhe o endereco que a"
-  echo "  tela do 'Iniciar Servidor' mostra e digite"
-  echo "  ele no navegador deste aparelho."
+  echo "  Enderecos que ESTE aparelho enxerga:"
+  ip -4 addr 2>/dev/null \
+    | awk '/inet / && !/127\.0\.0\.1/ {gsub(/\/.*/, "", $2); print "      " $2}'
+  echo ""
+  echo "  Eles precisam comecar com os mesmos tres"
+  echo "  numeros do endereco que o servidor mostrou."
+  echo "  Se nao comecarem, os dois aparelhos estao"
+  echo "  em redes diferentes."
+  echo ""
+  echo "  Ultimo recurso: olhe o endereco na tela do"
+  echo "  'Iniciar Servidor' e digite no navegador."
 fi
 echo ""
 echo "=============================================="

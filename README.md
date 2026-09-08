@@ -50,17 +50,9 @@ um bloco.
 
 ### Mouse andando ao contrário
 
-Em suporte de teleprompter o cursor costuma andar invertido. No Passo 3 há a
-opção **Mouse**, com três escolhas:
-
-| Escolha | Quando usar |
-| --- | --- |
-| **Normal** | O mouse já anda certo. |
-| **Corrigir esquerda/direita (espelho)** | Só o horizontal está invertido — caso do vidro/espelho na frente da câmera. |
-| **Corrigir os dois eixos (girado 180°)** | O aparelho está de cabeça para baixo no suporte, e tanto o horizontal quanto o vertical estão invertidos. |
-
-Escolha a errada e um dos eixos fica invertido: se cima/baixo ficou ao
-contrário, você está em *girado 180°* e o certo é *espelho* (ou o contrário).
+Em suporte de teleprompter o aparelho fica girado e o cursor anda invertido: a
+mão vai para um lado e ele vai para o outro. Marque **Corrigir o mouse** no
+Passo 3 — ele inverte os dois eixos, esquerda/direita e cima/baixo.
 
 Dentro do prompter, o cursor do sistema é escondido e o app desenha o próprio
 ponteiro (uma cruz branca), que anda no sentido certo. O clique vale para o
@@ -93,8 +85,8 @@ pkg update && pkg install nodejs git
 Quando perguntar `Continue? [Y/n]`, responda `y` e Enter. Se responder que já
 estão na versão mais nova, está certo — pode seguir.
 
-> Só esses dois. O `qrencode`, que desenha o QR Code de conexão, é instalado
-> sozinho no passo 3 — não precisa digitar o nome dele.
+> Só esses dois. Nada mais precisa ser instalado: o QR Code de conexão é
+> desenhado pelo próprio projeto.
 
 **2. Baixar o projeto**
 
@@ -149,7 +141,8 @@ aparelho liga.
 | `destination path 'tptvweb' already exists` | Já está baixado. Use `cd $HOME/tptvweb && git pull`. |
 | `No command run found` | Você digitou a frase `Run 'apt list --upgradable'`, que é só um aviso do Termux, não um comando. Ignore. |
 | `22 packages can be upgraded` | Só um aviso. Não precisa fazer nada. |
-| Não aparece QR ao iniciar o servidor | Falta o `qrencode`. Rode de novo `sh scripts/instalar-atalhos.sh`, ou instale à mão: `pkg install qrencode` (com **q**, de QR). |
+| `Unable to locate package qrencode` | Esse pacote não existe no Termux e não é mais necessário — instale só `nodejs git`. |
+| **Conectar Tp** não acha o servidor | Ele varre a rede inteira e mostra os endereços que este aparelho enxerga. Se não começarem com os mesmos três números do endereço do servidor, os dois estão em redes diferentes. |
 | `Authentication failed` no `git clone` | O repositório precisa estar público. Confira em <https://github.com/ofernandojr/tptvweb>. |
 
 ### Usar no dia a dia
@@ -194,9 +187,9 @@ Aparece em dois lugares, os dois com o mesmo endereço:
 - **Dentro do app**, no Passo 4, para repassar a conexão a um terceiro aparelho
   sem voltar ao Termux.
 
-> O QR dentro do app só aparece quando você abriu o app **pelo endereço de rede**
-> (`http://192.168.43.1:8080`). Se abriu por `localhost`, o app avisa — aquele
-> endereço só vale no próprio aparelho e não serviria para ninguém.
+Os dois levam sempre o **endereço de rede**, nunca `localhost`. Mesmo quando você
+abre o app por `http://localhost:8080`, ele pergunta ao servidor qual é o IP da
+rede e monta o QR com ele — `localhost` só valeria no próprio aparelho.
 
 ### Comandar do outro aparelho
 

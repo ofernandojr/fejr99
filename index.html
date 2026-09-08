@@ -408,14 +408,7 @@
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
       <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
-      <div class="linha hidden" id="linhaMouse">
-        <span class="nome">Mouse</span>
-        <select id="selMouse">
-          <option value="off">Normal</option>
-          <option value="x">Corrigir esquerda/direita (espelho)</option>
-          <option value="xy">Corrigir os dois eixos (girado 180°)</option>
-        </select>
-      </div>
+      <label class="chk hidden" id="linhaMouse"><input type="checkbox" id="chkMouse"> Corrigir o mouse <small>(inverte os dois eixos, para o aparelho girado no suporte)</small></label>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
@@ -919,7 +912,7 @@
 
       touchEl.addEventListener('wheel', (e) => {
         e.preventDefault();
-        rolarPara(scrollState.offset + e.deltaY * (modoMouse === 'xy' ? -1 : 1));
+        rolarPara(scrollState.offset + e.deltaY * (mouseGiradoAtivo() ? -1 : 1));
       }, { passive: false });
     })();
 
@@ -937,9 +930,8 @@
        trava nas bordas da tela. Sem ele, funciona igual, mas o
        ponteiro pode empacar quando o cursor real chega na borda.
     */
-    // 'off' = mouse normal | 'x' = so esquerda/direita (tela espelhada)
-    // 'xy' = os dois eixos (aparelho girado 180 graus no suporte)
-    let modoMouse = localStorage.getItem('tvweb_modoMouse') || 'off';
+    // Ligado = inverte os dois eixos (esquerda/direita e cima/baixo).
+    let mouseCorrigido = localStorage.getItem('tvweb_mouseCorrigido') === '1';
     const ponteiro = { x: 0, y: 0 };
     let ponteiroLigado = false, reenviandoClique = false, engolirClique = false;
 
@@ -947,7 +939,7 @@
       return !!(window.matchMedia && window.matchMedia('(any-pointer: fine)').matches);
     }
     function mouseGiradoAtivo() {
-      return modoMouse !== 'off' && !prompterEl.classList.contains('hidden');
+      return mouseCorrigido && !prompterEl.classList.contains('hidden');
     }
 
     function desenharPonteiro() {
@@ -986,11 +978,8 @@
     document.addEventListener('mousemove', (e) => {
       if (!ponteiroLigado) return;
       const dx = e.movementX || 0, dy = e.movementY || 0;
-      // Tela espelhada inverte so o horizontal. So o aparelho girado 180 graus
-      // inverte tambem o vertical - inverter sempre deixava o cima/baixo errado.
-      const sinalY = (modoMouse === 'xy') ? -1 : 1;
       ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, ponteiro.x - dx));
-      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y + dy * sinalY));
+      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y - dy));
       desenharPonteiro();
       if (arrBaixo) {
         const d = arrY - ponteiro.y;
@@ -1049,10 +1038,10 @@
     /* ===== OPCAO NOS AJUSTES (so aparece se houver mouse) ===== */
     (function opcaoMouse() {
       $('#linhaMouse').classList.toggle('hidden', !temMouse());
-      $('#selMouse').value = modoMouse;
-      $('#selMouse').addEventListener('change', () => {
-        modoMouse = $('#selMouse').value;
-        localStorage.setItem('tvweb_modoMouse', modoMouse);
+      $('#chkMouse').checked = mouseCorrigido;
+      $('#chkMouse').addEventListener('change', () => {
+        mouseCorrigido = $('#chkMouse').checked;
+        localStorage.setItem('tvweb_mouseCorrigido', mouseCorrigido ? '1' : '0');
         desligarPonteiro();
         sincronizarPonteiro();
       });
@@ -1134,28 +1123,13 @@
     $('#btnSalvar').addEventListener('click', salvarPauta);
 
     /* ===== QR DE CONEXAO =====
-       Mostra o endereco pelo qual ESTE aparelho foi aberto. So faz sentido
-       quando o app veio do servidor (http://ip:porta); aberto de outro jeito,
-       o endereco nao serve para o outro aparelho. */
-    function desenharQrConexao() {
+       O QR precisa levar o endereco de REDE, nunca "localhost" - localhost so
+       vale no proprio aparelho. Como a pagina nao tem como descobrir o IP da
+       maquina, ela pergunta ao servidor (/ips). Assim o QR funciona mesmo
+       quando o app foi aberto por http://localhost:8080. */
+    function montarQr(url) {
       const caixa = $('#qrAcesso');
       const aviso = $('#qrAviso');
-      const ehLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-
-      if (location.protocol !== 'http:' || !location.hostname) {
-        caixa.classList.remove('show');
-        aviso.textContent = 'Abra o app pelo endereço do servidor para o QR aparecer.';
-        return;
-      }
-      if (ehLocal) {
-        caixa.classList.remove('show');
-        aviso.textContent = 'Você abriu por "localhost", que só vale neste aparelho. ' +
-          'Abra pelo endereço de rede que o Termux mostrou (ex.: http://192.168.43.1:8080) ' +
-          'para o QR aparecer aqui. O Termux também mostra um QR ao iniciar o servidor.';
-        return;
-      }
-
-      const url = location.origin + '/';
       try {
         const qr = qrcode(0, 'M');
         qr.addData(url);
@@ -1180,6 +1154,48 @@
       } catch (e) {
         caixa.classList.remove('show');
         aviso.textContent = 'Não consegui gerar o QR. Digite o endereço à mão: ' + url;
+      }
+    }
+
+    function ehEnderecoLocal(host) {
+      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    }
+
+    async function desenharQrConexao() {
+      const caixa = $('#qrAcesso');
+      const aviso = $('#qrAviso');
+
+      if (location.protocol !== 'http:' || !location.hostname) {
+        caixa.classList.remove('show');
+        aviso.textContent = 'Abra o app pelo endereço do servidor para o QR aparecer.';
+        return;
+      }
+
+      // Aberto por um IP de rede: esse endereco ja serve.
+      if (!ehEnderecoLocal(location.hostname)) {
+        montarQr(location.origin + '/');
+        return;
+      }
+
+      // Aberto por localhost: pergunta ao servidor qual e o IP de rede dele.
+      aviso.textContent = 'Procurando o endereço de rede...';
+      try {
+        const dados = await fetch('/ips', { cache: 'no-store' }).then((r) => r.json());
+        const ip = (dados.ips || [])[0];
+        if (!ip) {
+          caixa.classList.remove('show');
+          aviso.textContent = 'Este aparelho não está em nenhuma rede. Ligue o hotspot ' +
+            'ou conecte no Wi-Fi e recarregue esta página.';
+          return;
+        }
+        montarQr('http://' + ip + ':' + (dados.porta || location.port) + '/');
+        if ((dados.ips || []).length > 1) {
+          aviso.textContent = 'Outros endereços deste aparelho: ' +
+            dados.ips.slice(1).join(', ') + '. Se o QR não funcionar, tente um destes.';
+        }
+      } catch (e) {
+        caixa.classList.remove('show');
+        aviso.textContent = 'Não consegui falar com o servidor para descobrir o endereço de rede.';
       }
     }
     desenharQrConexao();

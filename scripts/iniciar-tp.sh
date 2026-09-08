@@ -44,14 +44,14 @@ descobrir_ips() {
 
 mostrar_qr() {
   # $1 = url
-  if command -v qrencode >/dev/null 2>&1; then
-    echo ""
-    qrencode -t ANSIUTF8 -m 2 "$1"
+  # Desenhado pelo proprio projeto (scripts/qr.js), com a mesma biblioteca
+  # que o app usa no navegador. Nao depende de instalar nenhum pacote.
+  echo ""
+  if node "$PROJ/scripts/qr.js" "$1" 2>/dev/null; then
     echo "    $1"
   else
-    echo ""
-    echo "    Para ver um QR Code aqui, instale uma"
-    echo "    vez:   pkg install qrencode"
+    echo "    (nao consegui desenhar o QR aqui)"
+    echo "    Digite no outro aparelho:  $1"
   fi
 }
 

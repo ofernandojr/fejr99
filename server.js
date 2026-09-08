@@ -16,6 +16,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PORT = process.env.PORT || 8080;
 const ROOT = __dirname;
@@ -47,6 +48,23 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+
+  // ----- Enderecos de rede deste servidor -----
+  // O navegador nao tem como descobrir o IP da maquina. Quando o app e
+  // aberto por "localhost", e daqui que ele tira o endereco de verdade
+  // para montar o QR que o outro aparelho vai ler.
+  if (url.pathname === '/ips') {
+    const ips = [];
+    const ifaces = os.networkInterfaces();
+    Object.keys(ifaces).forEach((nome) => {
+      (ifaces[nome] || []).forEach((info) => {
+        const v4 = info.family === 'IPv4' || info.family === 4;
+        if (v4 && !info.internal) ips.push(info.address);
+      });
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ ips: ips, porta: PORT }));
+  }
 
   // ----- Stream de eventos (servidor -> clientes) -----
   if (url.pathname === '/events') {
