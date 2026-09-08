@@ -1006,10 +1006,7 @@
       ponteiro.y = window.innerHeight / 2;
       prompterEl.classList.add('mouse-girado');
       $('#ponteiroVirtual').classList.remove('hidden');
-      ultimoCliente = null;   // recomeca a contagem de deslocamento
       desenharPonteiro();
-      // Prende o cursor real; se o navegador recusar, o modo sem trava serve.
-      try { if (prompterEl.requestPointerLock) prompterEl.requestPointerLock(); } catch (e) {}
     }
 
     function desligarPonteiro() {
@@ -1017,7 +1014,6 @@
       ponteiroLigado = false;
       prompterEl.classList.remove('mouse-girado');
       $('#ponteiroVirtual').classList.add('hidden');
-      try { if (document.exitPointerLock) document.exitPointerLock(); } catch (e) {}
     }
 
     function sincronizarPonteiro() {
@@ -1032,25 +1028,17 @@
     // movimento do mouse nao depende de ter havido um clique antes. Com
     // mousemove, tocar a tela uma vez deixava o "ultimo tipo" como touch e
     // o ponteiro congelava.
-    let ultimoCliente = null;
     document.addEventListener('pointermove', (e) => {
       if (!ponteiroLigado) return;
       if ((e.pointerType || 'mouse') !== 'mouse') return;
 
-      // movementX/Y so e confiavel com o Pointer Lock ativo; no Chrome do
-      // Android sem trava ele vem zerado. Nesse caso o deslocamento sai da
-      // diferenca entre as posicoes do cursor real.
-      let dx = e.movementX || 0;
-      let dy = e.movementY || 0;
-      if (dx === 0 && dy === 0 && ultimoCliente) {
-        dx = e.clientX - ultimoCliente.x;
-        dy = e.clientY - ultimoCliente.y;
-      }
-      ultimoCliente = { x: e.clientX, y: e.clientY };
-      if (dx === 0 && dy === 0) return;
-
-      ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, ponteiro.x - dx));
-      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y - dy));
+      // ESPELHA A POSICAO do cursor real, em vez de somar deslocamentos.
+      // Somando, o cursor real caminhava para o lado oposto, encostava na
+      // borda da tela e parava de gerar movimento - o ponteiro "andava
+      // pouco" e travava. Espelhando, o movimento e 1:1, a tela inteira e
+      // alcancavel e nenhum erro se acumula.
+      ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, window.innerWidth  - e.clientX));
+      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, window.innerHeight - e.clientY));
       desenharPonteiro();
       if (arrBaixo) {
         const d = arrY - ponteiro.y;
