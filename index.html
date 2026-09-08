@@ -935,6 +935,19 @@
     const ponteiro = { x: 0, y: 0 };
     let ponteiroLigado = false, reenviandoClique = false, engolirClique = false;
 
+    // De qual aparelho veio o ultimo toque/clique. O ponteiro virtual so deve
+    // interceptar o MOUSE: o dedo continua clicando os botoes direto. Sem isso,
+    // com a correcao ligada o toque na tela era engolido junto e botoes como o
+    // VOLTAR ficavam mortos ao dedo.
+    let origemPonteiro = 'mouse';
+    document.addEventListener('pointerdown', (e) => {
+      origemPonteiro = e.pointerType || 'mouse';
+    }, true);
+    const veioDoMouse = (e) => {
+      if (e && typeof e.pointerType === 'string' && e.pointerType) return e.pointerType === 'mouse';
+      return origemPonteiro === 'mouse';
+    };
+
     function temMouse() {
       return !!(window.matchMedia && window.matchMedia('(any-pointer: fine)').matches);
     }
@@ -976,7 +989,7 @@
     let arrY = 0, arrOffset = 0, arrBaixo = false, arrArrastou = false, arrT0 = 0;
 
     document.addEventListener('mousemove', (e) => {
-      if (!ponteiroLigado) return;
+      if (!ponteiroLigado || !veioDoMouse(e)) return;
       const dx = e.movementX || 0, dy = e.movementY || 0;
       ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, ponteiro.x - dx));
       ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y - dy));
@@ -989,14 +1002,14 @@
     }, true);
 
     document.addEventListener('mousedown', (e) => {
-      if (!ponteiroLigado || reenviandoClique) return;
+      if (!ponteiroLigado || reenviandoClique || !veioDoMouse(e)) return;
       e.preventDefault(); e.stopPropagation();
       arrBaixo = true; arrArrastou = false;
       arrY = ponteiro.y; arrOffset = scrollState.offset; arrT0 = Date.now();
     }, true);
 
     document.addEventListener('mouseup', (e) => {
-      if (!ponteiroLigado || reenviandoClique) return;
+      if (!ponteiroLigado || reenviandoClique || !veioDoMouse(e)) return;
       e.preventDefault(); e.stopPropagation();
       if (!arrBaixo) return;
       arrBaixo = false;
@@ -1029,6 +1042,7 @@
     // (isTrusted false) tem de passar, senao botoes como o VOLTAR travam.
     document.addEventListener('click', (e) => {
       if (!e.isTrusted || reenviandoClique) return; // clique do proprio codigo passa
+      if (!veioDoMouse(e)) return;                  // dedo clica normalmente
       if (ponteiroLigado || engolirClique) {
         e.preventDefault(); e.stopPropagation();
         engolirClique = false;

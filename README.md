@@ -58,6 +58,10 @@ Dentro do prompter, o cursor do sistema é escondido e o app desenha o próprio
 ponteiro (uma cruz branca), que anda no sentido certo. O clique vale para o
 botão sob essa cruz. Fora do prompter o mouse continua como sempre.
 
+A correção vale **só para o mouse**. O toque na tela continua funcionando
+normalmente com a opção ligada: dedo clica os botões direto, sem passar pela
+cruz.
+
 > O navegador não consegue inverter o cursor do sistema; por isso o app desenha
 > um ponteiro próprio em vez de tentar mexer no do Android.
 
