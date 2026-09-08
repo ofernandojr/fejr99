@@ -967,6 +967,7 @@
       ponteiro.y = window.innerHeight / 2;
       prompterEl.classList.add('mouse-girado');
       $('#ponteiroVirtual').classList.remove('hidden');
+      ultimoCliente = null;   // recomeca a contagem de deslocamento
       desenharPonteiro();
       // Prende o cursor real; se o navegador recusar, o modo sem trava serve.
       try { if (prompterEl.requestPointerLock) prompterEl.requestPointerLock(); } catch (e) {}
@@ -988,9 +989,27 @@
     // ----- Movimento: o ponteiro anda ao contrario do cursor real -----
     let arrY = 0, arrOffset = 0, arrBaixo = false, arrArrastou = false, arrT0 = 0;
 
-    document.addEventListener('mousemove', (e) => {
-      if (!ponteiroLigado || !veioDoMouse(e)) return;
-      const dx = e.movementX || 0, dy = e.movementY || 0;
+    // Usa pointermove, nao mousemove: o evento traz o pointerType, entao o
+    // movimento do mouse nao depende de ter havido um clique antes. Com
+    // mousemove, tocar a tela uma vez deixava o "ultimo tipo" como touch e
+    // o ponteiro congelava.
+    let ultimoCliente = null;
+    document.addEventListener('pointermove', (e) => {
+      if (!ponteiroLigado) return;
+      if ((e.pointerType || 'mouse') !== 'mouse') return;
+
+      // movementX/Y so e confiavel com o Pointer Lock ativo; no Chrome do
+      // Android sem trava ele vem zerado. Nesse caso o deslocamento sai da
+      // diferenca entre as posicoes do cursor real.
+      let dx = e.movementX || 0;
+      let dy = e.movementY || 0;
+      if (dx === 0 && dy === 0 && ultimoCliente) {
+        dx = e.clientX - ultimoCliente.x;
+        dy = e.clientY - ultimoCliente.y;
+      }
+      ultimoCliente = { x: e.clientX, y: e.clientY };
+      if (dx === 0 && dy === 0) return;
+
       ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, ponteiro.x - dx));
       ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y - dy));
       desenharPonteiro();
