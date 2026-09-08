@@ -135,6 +135,12 @@ Termux). Depois, na tela inicial do aparelho: segure o dedo num espaço vazio �
 | **Conectar Tp** | Acha o servidor e abre o app | No que exibe |
 | **Atualizar Tp** | Baixa a versão nova | No que comanda |
 
+> O instalador também desliga o teclado virtual do Termux
+> (`hide-soft-keyboard-on-startup=true` em `~/.termux/termux.properties`). A tela
+> do **Iniciar Servidor** é só para ler — não há nada para digitar, e o teclado
+> cobria metade dela. Para reverter, troque para `false` nesse arquivo e rode
+> `termux-reload-settings`.
+
 **6. Início automático**
 
 Abra o **Termux:Boot** uma vez. A partir daí o servidor sobe sozinho quando o
