@@ -1,24 +1,27 @@
 #!/data/data/com.termux/files/usr/bin/sh
+# TVWEB Prompter — sobe o servidor neste aparelho e mostra o passo a passo
+# de como ligar o outro aparelho nele.
+# IMPORTANTE: esta janela precisa ficar aberta. Fechar = servidor cai.
 PROJ="$(cd "$(dirname "$0")/.." && pwd)"
 PORTA="${PORT:-8080}"
 
 clear
-echo "========================================"
-echo "         TVWEB Prompter"
-echo "========================================"
+echo "=============================================="
+echo "        TVWEB PROMPTER — SERVIDOR"
+echo "=============================================="
 echo ""
 
 termux-wake-lock 2>/dev/null
 
-# Sobe o servidor se não estiver rodando
 servidor_rodando() {
   (echo "" | nc -w1 127.0.0.1 "$PORTA") 2>/dev/null && return 0 || return 1
 }
 
 if servidor_rodando; then
-  echo "[OK] Servidor ja rodando na porta $PORTA."
+  echo "[OK] O servidor ja estava rodando."
+  JA_RODAVA=1
 else
-  echo "[..] Iniciando servidor..."
+  echo "[..] Ligando o servidor..."
   cd "$PROJ" || exit 1
   node server.js > "$PROJ/server.log" 2>&1 &
   i=0
@@ -26,18 +29,28 @@ else
     servidor_rodando && break
     sleep 1; i=$((i+1))
   done
-  servidor_rodando && echo "[OK] Servidor iniciado." \
-    || { echo "[ERRO] Servidor nao respondeu. Veja $PROJ/server.log"; read -r x; exit 1; }
+  if servidor_rodando; then
+    echo "[OK] Servidor ligado."
+    JA_RODAVA=0
+  else
+    echo ""
+    echo "[ERRO] O servidor nao subiu."
+    echo ""
+    echo "  Tente, nesta ordem:"
+    echo "  1. Feche e toque em 'Iniciar Servidor' de novo."
+    echo "  2. Rode o atalho 'Atualizar Tp'."
+    echo "  3. Veja o motivo em:"
+    echo "     $PROJ/server.log"
+    echo ""
+    echo "Pressione ENTER para fechar..."
+    read -r x
+    exit 1
+  fi
 fi
 
-# Pega todos os IPs disponíveis (tenta ip e ifconfig)
-IPS=""
-
-# Tentativa 1: ip addr
+# Descobre os IPs deste aparelho (o outro aparelho usa um deles)
 IPS=$(ip -4 addr 2>/dev/null \
   | awk '/inet / && !/127\.0\.0\.1/ {gsub(/\/.*/, "", $2); print $2}')
-
-# Tentativa 2: ifconfig (fallback)
 if [ -z "$IPS" ]; then
   IPS=$(ifconfig 2>/dev/null \
     | awk '/inet / && !/127\.0\.0\.1/ {
@@ -45,27 +58,80 @@ if [ -z "$IPS" ]; then
       }')
 fi
 
-# Diagnóstico — mostra todas as interfaces para ajudar a identificar o problema
 echo ""
-echo "--- interfaces detectadas ---"
-ip addr 2>/dev/null || ifconfig 2>/dev/null || echo "(nenhum comando disponivel)"
-echo "-----------------------------"
+echo "=============================================="
+echo "  COMO LIGAR UM APARELHO NO OUTRO"
+echo "=============================================="
+echo ""
+echo "  PASSO 1 — Ligue o hotspot DESTE aparelho"
+echo "  ----------------------------------------"
+echo "    Configuracoes > Ponto de acesso (hotspot)"
+echo "    Nao precisa de internet: o hotspot serve"
+echo "    so para os dois se enxergarem."
+echo "    (Ou coloque os dois na mesma Wi-Fi.)"
+echo ""
+echo "  PASSO 2 — Conecte o OUTRO aparelho"
+echo "  ----------------------------------------"
+echo "    No outro aparelho, entre no Wi-Fi e"
+echo "    conecte no hotspot que voce acabou de"
+echo "    ligar."
+echo ""
+echo "  PASSO 3 — Abra o app NESTE aparelho"
+echo "  ----------------------------------------"
+echo "    Abra o navegador e digite:"
+echo ""
+echo "        http://localhost:$PORTA"
+echo ""
+echo "  PASSO 4 — Abra o app no OUTRO aparelho"
+echo "  ----------------------------------------"
+if [ -n "$IPS" ]; then
+  echo "    Abra o navegador dele e digite:"
+  echo ""
+  echo "$IPS" | while read -r ip; do
+    echo "        >>>  http://$ip:$PORTA  <<<"
+  done
+  echo ""
+  echo "    (Se aparecer mais de um endereco acima,"
+  echo "     teste de cima para baixo ate um abrir.)"
+  echo ""
+  echo "    Atalho: no outro aparelho da para usar o"
+  echo "    widget 'Conectar Tp', que procura sozinho."
+else
+  echo "    NENHUMA REDE DETECTADA."
+  echo ""
+  echo "    Ligue o hotspot (Passo 1) e toque em"
+  echo "    'Iniciar Servidor' de novo para o"
+  echo "    endereco aparecer aqui."
+fi
+echo ""
+echo "  PASSO 5 — Confira"
+echo "  ----------------------------------------"
+echo "    No topo do app, nos dois aparelhos, deve"
+echo "    aparecer: 'Conectado ao servidor'."
+echo "    Pronto — o que voce mudar em um aparece"
+echo "    no outro na hora."
+echo ""
+echo "    Dica: no menu do navegador use"
+echo "    'Adicionar a tela inicial' nos dois."
+echo ""
+echo "=============================================="
+echo "  DEIXE ESTA JANELA ABERTA"
+echo "=============================================="
+echo ""
+echo "  Fechar esta janela DERRUBA o servidor e os"
+echo "  aparelhos param de sincronizar."
+echo ""
+echo "  Pode voltar para a tela inicial normalmente:"
+echo "  o servidor continua rodando por tras."
+echo ""
+echo "  Para DESLIGAR o servidor de proposito:"
+echo "  volte aqui e pressione Ctrl + C."
 echo ""
 
-echo ""
-echo "========================================"
-echo "  Neste tablet:  http://localhost:$PORTA"
-echo ""
-if [ -n "$IPS" ]; then
-  echo "  Outro tablet:"
-  echo "$IPS" | while read -r ip; do
-    echo "    >>> http://$ip:$PORTA <<<"
-  done
+# Mantém a sessão viva sem pedir ENTER: fechar aqui derrubaria o servidor.
+if [ "$JA_RODAVA" = "1" ]; then
+  # Servidor é de outra sessão; só segura a tela para leitura.
+  while true; do sleep 3600; done
 else
-  echo "  Ligue o Hotspot e rode este script"
-  echo "  novamente para ver o IP do outro tablet."
+  wait
 fi
-echo "========================================"
-echo ""
-echo "Pressione ENTER para fechar..."
-read -r x

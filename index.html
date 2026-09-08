@@ -35,9 +35,50 @@
       padding-right: calc(var(--pad) + var(--safe-right));
       padding-bottom: calc(32px + var(--safe-bottom));
     }
-    .credito { text-align: right; color: #bbb; font-size: 11px; margin: 0 0 4px; }
-    h1.titulo { font-size: 22px; font-weight: 800; margin: 0 0 12px; letter-spacing: -.3px; }
-    .sub { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #888; font-weight: 700; margin: 18px 0 8px; }
+    .credito { text-align: center; color: #bbb; font-size: 11px; margin: 22px 0 0; }
+    h1.titulo { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
+
+    /* ── Cabeçalho + status de conexão ── */
+    .topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 14px; flex-wrap: wrap; }
+    .pill {
+      font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 20px;
+      background: #E4E6EB; color: #666; white-space: nowrap;
+    }
+    .pill.on { background: #e6f7ea; color: #1a7f37; }
+
+    /* ── Títulos de passo ── */
+    .passo-tit {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 16px; font-weight: 800; color: #1C1E21; margin: 22px 0 10px;
+    }
+    .passo-tit .num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+      background: #1877F2; color: #fff; font-size: 14px; font-weight: 800;
+    }
+    .passo-tit small { font-weight: 600; color: #999; font-size: 13px; }
+
+    /* ── Blocos recolhíveis de ajuda ── */
+    .ajuda {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--card-shadow); margin-bottom: 12px; overflow: hidden;
+    }
+    .ajuda > summary {
+      list-style: none; cursor: pointer; user-select: none;
+      padding: 14px 16px; font-size: 14px; font-weight: 700; color: #1877F2;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .ajuda > summary::-webkit-details-marker { display: none; }
+    .ajuda > summary::after { content: '▾'; color: #aaa; font-size: 15px; transition: transform .2s; }
+    .ajuda[open] > summary::after { transform: rotate(180deg); }
+    .ajuda-corpo { padding: 0 16px 14px; font-size: 14px; line-height: 1.55; color: #444; }
+    .ajuda-corpo p { margin: 0 0 10px; }
+    .ajuda-corpo p:last-child { margin-bottom: 0; }
+    .ajuda-corpo code { background: #f0f2f5; padding: 2px 6px; border-radius: 5px; font-size: 13px; word-break: break-all; }
+    .passos { margin: 0 0 10px; padding-left: 22px; }
+    .passos li { margin-bottom: 8px; }
+
+    .dica { font-size: 12.5px; color: #999; line-height: 1.5; margin: 8px 0 0; }
 
     /* ── Card genérico ── */
     .card {
@@ -60,48 +101,6 @@
     #listaPauta li .b-edit { background: #1877F2; }
     #listaPauta li .b-del  { background: #f02849; }
 
-    /* ── QR de acesso / Servidor local ── */
-    .offline-box { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
-    .offline-box .of-titulo { font-weight: 700; font-size: 15px; }
-    .offline-box .of-dica   { font-size: 12px; color: #999; margin: 0; line-height: 1.4; }
-    .of-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
-    .of-botoes button {
-      flex: 1 1 auto; min-height: 50px; padding: 0 14px; border: none;
-      border-radius: 11px; font-weight: 700; font-size: 15px; color: #fff; cursor: pointer;
-    }
-    #btnGerarQr  { background: #1877F2; }
-    #btnSrv      { flex: 1 1 30%; background: #1a7f37; }
-    #btnSrv.conectado { background: #f02849; }
-    #srvStatus   { font-size: 13px; font-weight: 600; color: #888; }
-    #srvStatus.on   { color: #1a7f37; }
-    #srvStatus.wait { color: #e68a00; }
-    #srvStatus.err  { color: #c0392b; }
-    #qrAcesso { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 12px; background: #f7f7f7; border-radius: 10px; }
-    #qrAcesso.show { display: flex; }
-    #qrAcessoImg { max-width: min(88vw, 340px); height: auto; image-rendering: pixelated; background: #fff; border-radius: 8px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
-    #qrAcessoUrl { font-size: 12px; color: #1877F2; font-weight: 700; word-break: break-all; text-align: center; }
-    #inputSrv { flex: 1 1 55%; min-width: 0; min-height: 48px; padding: 0 12px; border: 1.5px solid #dde; border-radius: 10px; font-size: 15px; }
-
-    /* ── Bluetooth accordion ── */
-    .mapeamento { background: #fff; border-radius: var(--radius); box-shadow: var(--card-shadow); margin-bottom: 12px; overflow: hidden; }
-    .map-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; user-select: none; }
-    .map-header-left { display: flex; flex-direction: column; gap: 2px; }
-    .mapeamento .map-titulo { font-weight: 700; font-size: 15px; margin: 0; }
-    .mapeamento .map-dica   { font-size: 12px; color: #999; margin: 2px 0 0; }
-    .map-arrow { font-size: 16px; color: #aaa; transition: transform .2s; }
-    .map-arrow.aberto { transform: rotate(180deg); }
-    .map-body { padding: 0 16px 14px; display: none; }
-    .map-body.aberto { display: block; }
-    #selGamepad { width: 100%; min-height: 46px; padding: 0 10px; border: 1.5px solid #dde; border-radius: 10px; font-size: 14px; margin-bottom: 10px; background: #f9f9f9; }
-    #padStatus { font-size: 12px; font-weight: 600; color: #999; margin: 0 0 10px; }
-    #padStatus.on { color: #1a7f37; }
-    .map-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid #f0f0f0; }
-    .map-item:first-of-type { border-top: none; }
-    .map-item .map-nome  { flex: 1; font-size: 14px; }
-    .map-item .map-bind  { min-width: 88px; text-align: center; font-size: 12px; font-weight: 700; color: #1877F2; background: #eef3ff; border-radius: 8px; padding: 7px 8px; }
-    .map-item .map-bind.aguardando { color: #e68a00; background: #fff4e5; }
-    .map-item button { min-height: 40px; padding: 0 13px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; color: #fff; background: #aaa; }
-    .map-item button.b-map { background: #1877F2; }
 
     /* ── Arquivos ── */
     .arquivos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -121,13 +120,23 @@
 
     /* ── Ajustes ── */
     .ajustes { display: flex; flex-direction: column; gap: 0; background: #fff; border-radius: var(--radius); box-shadow: var(--card-shadow); margin-bottom: 12px; overflow: hidden; }
-    .ajustes label { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
-    .ajustes label:last-child { border-bottom: none; }
-    .ajustes label > span.nome { min-width: 88px; font-weight: 700; color: #333; }
+    .ajustes label, .ajustes .linha { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+    .ajustes > *:last-child { border-bottom: none; }
+    /* última linha visível quando a opção do mouse está oculta */
+    .ajustes > *:nth-last-child(2):has(+ .hidden) { border-bottom: none; }
+    .ajustes .nome { min-width: 88px; font-weight: 700; color: #333; }
     .ajustes input[type=range] { flex: 1; accent-color: #1877F2; }
     .ajustes .valor { min-width: 40px; text-align: right; font-weight: 700; color: #1877F2; font-size: 15px; font-variant-numeric: tabular-nums; }
-    .ajustes label.chk { gap: 12px; font-size: 14px; color: #444; }
+    .ajustes label.chk { gap: 12px; font-size: 14px; color: #444; line-height: 1.4; }
     .ajustes label.chk input[type=checkbox] { width: 20px; height: 20px; accent-color: #1877F2; cursor: pointer; flex-shrink: 0; }
+    .ajustes label.chk small { display: block; color: #999; font-size: 12px; }
+    /* Botões − / + ao lado dos sliders */
+    .ajustes .passo {
+      min-width: 40px; min-height: 40px; flex-shrink: 0;
+      border: none; border-radius: 10px; background: #E4E6EB; color: #1C1E21;
+      font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
+    }
+    .ajustes .passo:active { background: #d0d2d6; }
 
     /* ── Botão iniciar ── */
     .btn-iniciar {
@@ -182,7 +191,7 @@
 
     /* ── Prompter ── */
     #prompter { position: fixed; inset: 0; background: #000; z-index: 1000; overflow: hidden; touch-action: none; }
-    #prompter, .prom-controles, .crono, .btn-voltar { user-select: none; -webkit-user-select: none; }
+    #prompter, .prom-controles, .btn-voltar { user-select: none; -webkit-user-select: none; }
 
     /* Barra de progresso da pauta (topo do prompter) */
     #promProgresso { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,.12); z-index: 1003; }
@@ -227,6 +236,17 @@
     }
     #speedToast.fade { opacity: 0; }
 
+    #promDica {
+      position: fixed; bottom: calc(92px + var(--safe-bottom)); left: 50%;
+      transform: translateX(-50%); z-index: 1004; max-width: 90vw; text-align: center;
+      background: rgba(0,0,0,.62); color: #fff; padding: 10px 18px;
+      border-radius: 20px; font-size: 14px; font-weight: 600;
+      transition: opacity .4s; pointer-events: none;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    #promDica.fade { opacity: 0; }
+    .espelha-ui #promDica { transform: translateX(-50%) scaleX(-1); }
+
     .prom-controles {
       position: fixed; z-index: 1002;
       bottom: calc(16px + var(--safe-bottom));
@@ -247,20 +267,8 @@
 
     #blackout { position: fixed; inset: 0; background: #000; z-index: 1001; }
 
-    .crono {
-      position: fixed; z-index: 1002;
-      top: calc(12px + var(--safe-top));
-      right: calc(10px + var(--safe-right));
-      background: rgba(20,20,24,.88); border-radius: 12px; padding: 10px 12px;
-      text-align: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    }
-    #cronoTexto { display: block; font-family: 'Menlo', 'Courier New', monospace; font-size: 26px; font-weight: 700; color: #42b72a; }
-    .crono-btns { display: flex; gap: 6px; margin-top: 6px; }
-    .crono-btns button { flex: 1; min-height: 36px; padding: 0 8px; background: #3a3b3c; color: #fff; border: none; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
-
     .espelha-ui .prom-controles { transform: translateX(-50%) scaleX(-1); flex-direction: row-reverse; }
-    .espelha-ui .btn-voltar, .espelha-ui .crono, .espelha-ui #speedToast { transform: scaleX(-1); }
-    .espelha-ui .crono-btns { flex-direction: row-reverse; }
+    .espelha-ui .btn-voltar, .espelha-ui #speedToast { transform: scaleX(-1); }
     .espelha-ui .prom-aviso { transform: translateY(-50%) scaleX(-1); }
 
     /* ── Modal ── */
@@ -277,19 +285,16 @@
     @media (max-width: 430px) {
       :root { --pad: 12px; --radius: 12px; }
       h1.titulo { font-size: 19px; }
-      .sub { font-size: 12px; }
       .papel-btn { font-size: 13px; min-height: 42px; }
       .arquivos button, .link-arq { flex: 1 1 100%; }
-      .ajustes label > span.nome { min-width: 78px; font-size: 13px; }
-      .ajustes label { padding: 10px 12px; }
+      .ajustes .nome { min-width: 78px; font-size: 13px; }
+      .ajustes label, .ajustes .linha { padding: 10px 12px; }
       .ajustes .valor { font-size: 14px; }
       #txtNovo { min-height: 90px; font-size: 14px; }
       #btnAdd  { min-height: 48px; font-size: 15px; }
       .btn-iniciar { min-height: 58px; font-size: 17px; }
       .prom-controles button { min-width: 52px; min-height: 54px; font-size: 17px; padding: 10px; }
       #btnPlay { min-width: 68px; }
-      #cronoTexto { font-size: 22px; }
-      .crono-btns button { font-size: 11px; min-height: 32px; }
     }
 
     /* ── Tablet grande (≥ 900px — Galaxy Tab S10, iPad) ── */
@@ -312,72 +317,92 @@
 
   <!-- ===== VIEW EDIÇÃO ===== -->
   <div id="editor">
-    <p class="credito">desenvolvido por Fernando Junior</p>
-    <h1 class="titulo">TVWEB Prompter</h1>
+    <header class="topo">
+      <h1 class="titulo">TVWEB Prompter</h1>
+      <span class="pill" id="pillConexao">Sozinho neste aparelho</span>
+    </header>
 
-    <!-- ===== QR DE ACESSO ===== -->
-    <div class="offline-box card">
-      <span class="of-titulo">Compartilhar acesso por QR</span>
-      <p class="of-dica">Gere um QR Code com o endereço desta página. O outro tablet escaneia com a câmera e abre no navegador. Para o servidor local, conecte primeiro e depois gere o QR.</p>
-      <div class="of-botoes">
-        <button id="btnGerarQr">Gerar QR de acesso</button>
+    <details class="ajuda">
+      <summary>Primeira vez aqui? Leia isto</summary>
+      <div class="ajuda-corpo">
+        <p><b>O que é:</b> a tela grande mostra o seu texto rolando, para você
+        ler olhando para a câmera.</p>
+        <p><b>O mínimo para funcionar:</b> escreva o texto no Passo 1 e toque em
+        <b>INICIAR TELEPROMPTER</b>. Só isso.</p>
+        <p><b>Dois aparelhos:</b> um exibe o texto e o outro comanda. Veja o
+        Passo 4, lá embaixo.</p>
+        <p><b>Na tela do prompter:</b> um toque = começa/pausa · arraste para
+        cima e para baixo = rola o texto · botões <b>−</b> e <b>+</b> = mudam a
+        velocidade.</p>
       </div>
-      <div id="qrAcesso">
-        <canvas id="qrAcessoImg"></canvas>
-        <div id="qrAcessoUrl"></div>
-      </div>
-    </div>
+    </details>
 
-    <!-- ===== SERVIDOR LOCAL (automático, sem QR) ===== -->
-    <div class="offline-box card">
-      <span class="of-titulo">Servidor local (automático, sem QR)</span>
-      <p class="of-dica">Um tablet roda o servidor (server.js, via Termux). Ao abrir o endereço do servidor nos dois tablets, eles sincronizam sozinhos. Se você já abriu pelo servidor, a conexão é automática. Passo a passo no README.</p>
-      <div class="of-botoes">
-        <input type="text" id="inputSrv" placeholder="http://192.168.43.1:8080" autocapitalize="none" autocomplete="off">
-        <button id="btnSrv">Conectar</button>
-      </div>
-      <div id="srvStatus">Desconectado.</div>
-    </div>
-
-    <div class="arquivos">
-      <label class="link-arq">Importar TXT<input type="file" id="fileTxt" accept=".txt" hidden></label>
-      <button id="btnSalvar">Salvar pauta</button>
-      <label class="link-arq">Carregar pauta<input type="file" id="fileJson" accept=".json" hidden></label>
-    </div>
-
+    <!-- ===== PASSO 1 — TEXTO ===== -->
+    <h2 class="passo-tit"><span class="num">1</span> Escreva o texto</h2>
     <div class="add-box">
-      <textarea id="txtNovo" placeholder="Cole ou digite o texto aqui..."></textarea>
+      <textarea id="txtNovo" placeholder="Cole ou digite aqui o texto que você vai ler..."></textarea>
       <button id="btnAdd">ADICIONAR À LISTA</button>
+      <p class="dica">Cada bloco é um pedaço do texto. Divida por assunto: assim
+      dá para pular de um para outro durante a leitura.</p>
     </div>
 
-    <h2 class="sub">ORDEM DA PAUTA</h2>
+    <!-- ===== PASSO 2 — ORDEM ===== -->
+    <h2 class="passo-tit"><span class="num">2</span> Confira a ordem</h2>
     <ul id="listaPauta"></ul>
+    <p class="dica" id="dicaVazia">Nenhum bloco ainda. Escreva algo no Passo 1.</p>
+    <details class="ajuda">
+      <summary>Salvar ou abrir um texto do aparelho</summary>
+      <div class="ajuda-corpo">
+        <div class="arquivos">
+          <label class="link-arq">Importar TXT<input type="file" id="fileTxt" accept=".txt" hidden></label>
+          <button id="btnSalvar">Salvar pauta</button>
+          <label class="link-arq">Carregar pauta<input type="file" id="fileJson" accept=".json" hidden></label>
+        </div>
+        <p class="dica">O texto já fica guardado sozinho neste aparelho. Isto
+        aqui é só para levar o texto para outro lugar.</p>
+      </div>
+    </details>
 
+    <!-- ===== PASSO 3 — APARÊNCIA ===== -->
+    <h2 class="passo-tit"><span class="num">3</span> Ajuste como vai aparecer</h2>
     <div class="ajustes">
-      <label><span class="nome">Fonte</span> <input type="range" id="rngFonte" min="20" max="250" value="60"><span class="valor" id="valFonte">60</span></label>
-      <label><span class="nome">Margem</span> <input type="range" id="rngMargem" min="0" max="300" value="50"><span class="valor" id="valMargem">50</span></label>
-      <label><span class="nome">Velocidade</span> <input type="range" id="rngVel" min="0.1" max="10" step="0.1" value="1.5"><span class="valor" id="valVel">1.5</span></label>
-      <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto</label>
-      <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar controles (Modo Apresentador)</label>
-      <label class="chk"><input type="checkbox" id="chkModoControle"> Modo Controlador — texto sem espelho neste tablet</label>
-    </div>
-
-    <div class="mapeamento">
-      <div class="map-header" id="mapHeader">
-        <span class="map-titulo">Controle Bluetooth</span>
-        <span class="map-arrow" id="mapArrow">▼</span>
+      <div class="linha">
+        <span class="nome">Tamanho</span>
+        <button type="button" class="passo" id="btnFonteMenos" aria-label="Diminuir fonte">−</button>
+        <input type="range" id="rngFonte" min="20" max="250" value="60">
+        <button type="button" class="passo" id="btnFonteMais" aria-label="Aumentar fonte">+</button>
+        <span class="valor" id="valFonte">60</span>
       </div>
-      <div class="map-body" id="mapBody">
-        <p class="map-dica">Toque em "Mapear" e pressione o botão desejado no controle. Funciona com apresentadores/remotos (que enviam teclas) e com gamepads.</p>
-        <p id="padStatus">Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).</p>
-        <label style="display:block;margin-bottom:10px;font-size:13px;font-weight:600;">Dispositivo gamepad:
-          <select id="selGamepad"><option value="">— Nenhum gamepad conectado —</option></select>
-        </label>
-        <div id="listaMapeamento"></div>
+      <div class="linha">
+        <span class="nome">Velocidade</span>
+        <button type="button" class="passo" id="btnVelMenos" aria-label="Diminuir velocidade">−</button>
+        <input type="range" id="rngVel" min="0.1" max="10" step="0.1" value="1.5">
+        <button type="button" class="passo" id="btnVelMais" aria-label="Aumentar velocidade">+</button>
+        <span class="valor" id="valVel">1.5</span>
       </div>
+      <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
+      <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
+      <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
+      <label class="chk hidden" id="labelInverterMouse"><input type="checkbox" id="chkInverterMouse"> Inverter a rolagem do mouse</label>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
+
+    <!-- ===== PASSO 4 — DOIS APARELHOS (opcional) ===== -->
+    <h2 class="passo-tit"><span class="num">4</span> Usar dois aparelhos <small>(opcional)</small></h2>
+    <div class="ajuda">
+      <div class="ajuda-corpo" style="padding: 16px;">
+        <p>Um aparelho roda o <b>servidor</b> e manda tudo para o outro, pela
+        rede local — sem internet.</p>
+        <p><b>O passo a passo completo aparece na tela do Termux</b> assim que
+        você tocar no atalho <b>Iniciar Servidor</b>. É só seguir o que estiver
+        escrito lá.</p>
+        <p class="dica">Quem abre o app pelo endereço do servidor já entra
+        sincronizado: não há nada para configurar aqui.</p>
+      </div>
+    </div>
+
+    <p class="credito">desenvolvido por Fernando Junior</p>
   </div>
 
   <!-- ===== PAINEL CONTROLE REMOTO ===== -->
@@ -393,8 +418,8 @@
       <button id="rcNext">PRÓXIMO ▶|</button>
     </div>
     <div class="rc-row">
-      <button id="rcVelDown">▼ VEL</button>
-      <button id="rcVelUp">▲ VEL</button>
+      <button id="rcVelDown">− VEL</button>
+      <button id="rcVelUp">+ VEL</button>
     </div>
     <button id="rcBlackout">⬛ BLACKOUT</button>
   </div>
@@ -405,6 +430,7 @@
     <button class="btn-voltar" id="btnVoltar">⟵ VOLTAR</button>
     <div id="syncIndicador" class="hidden">⚡ Sincronizado</div>
     <div id="speedToast" class="hidden">Velocidade: 1.5</div>
+    <div id="promDica" class="hidden">Toque = começa / pausa · Arraste = rola o texto</div>
 
     <!-- Camada de toque: 1 toque = play/pause; arrastar na vertical = velocidade -->
     <div id="promTouch"></div>
@@ -416,22 +442,14 @@
 
     <div class="prom-controles">
       <button id="btnPrev" title="Bloco Anterior">|◀</button>
-      <button id="btnDesce" title="Diminuir Velocidade">▼</button>
+      <button id="btnDesce" title="Diminuir Velocidade">−</button>
       <button id="btnPlay">PLAY</button>
-      <button id="btnSobe" title="Aumentar Velocidade">▲</button>
+      <button id="btnSobe" title="Aumentar Velocidade">+</button>
       <button id="btnNext" title="Próximo Bloco">▶|</button>
     </div>
 
     <div id="blackout" class="hidden"></div>
 
-    <div class="crono">
-      <span id="cronoTexto">00:00:00</span>
-      <div class="crono-btns">
-        <button id="cStart">START</button>
-        <button id="cPause">PAUSE</button>
-        <button id="cReset">RESET</button>
-      </div>
-    </div>
   </div>
 
   <!-- ===== CUSTOM MODAL ===== -->
@@ -445,9 +463,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ===== BIBLIOTECA LOCAL (gerador de QR de acesso) ===== -->
-  <script src="libs/qrcode.min.js"></script>
 
   <!-- ===== REGISTRO DO SERVICE WORKER (cache offline / PWA) ===== -->
   <script>
@@ -510,6 +525,7 @@
     function renderLista() {
       const ul = $('#listaPauta');
       ul.innerHTML = '';
+      $('#dicaVazia').classList.toggle('hidden', Pauta.length > 0);
       Pauta.forEach((texto, i) => {
         const li = document.createElement('li');
         const preview = texto.length > 60 ? texto.slice(0, 60) + '…' : texto;
@@ -556,18 +572,16 @@
     renderLista();
 
     /* ===== AJUSTES ===== */
-    const Settings = { fonte: 60, margem: 50, velocidade: 1.5, espelho: true, espelhoUI: false };
+    const Settings = { fonte: 60, velocidade: 1.5, espelho: true, espelhoUI: false };
     let speedToastTimeout = null;
 
     function atualizarValores() {
       $('#valFonte').textContent = $('#rngFonte').value;
-      $('#valMargem').textContent = $('#rngMargem').value;
       $('#valVel').textContent = parseFloat($('#rngVel').value).toFixed(1);
     }
 
     function lerSettings() {
       Settings.fonte = +$('#rngFonte').value;
-      Settings.margem = +$('#rngMargem').value;
       Settings.velocidade = parseFloat($('#rngVel').value);
       Settings.espelho = $('#chkEspelho').checked;
       Settings.espelhoUI = $('#chkEspelhoUI').checked;
@@ -591,20 +605,38 @@
       const s = JSON.parse(localStorage.getItem('tvweb_settings') || 'null');
       if (s) {
         if (typeof s.fonte === 'number')      $('#rngFonte').value = s.fonte;
-        if (typeof s.margem === 'number')     $('#rngMargem').value = s.margem;
         if (typeof s.velocidade === 'number') $('#rngVel').value = s.velocidade;
         if (typeof s.espelho === 'boolean')   $('#chkEspelho').checked = s.espelho;
         if (typeof s.espelhoUI === 'boolean') $('#chkEspelhoUI').checked = s.espelhoUI;
       }
     } catch (e) {}
 
-    ['#rngFonte', '#rngMargem', '#rngVel', '#chkEspelho', '#chkEspelhoUI'].forEach(sel =>
-      $(sel).addEventListener('input', () => {
-        lerSettings();
-        pushSettings();
-        if (!prompterEl.classList.contains('hidden')) { montarPrompter(); aplicarOffset(); }
-      })
+    // Aplica e sincroniza os ajustes na hora, com o prompter aberto ou não.
+    function aplicarAjustes() {
+      lerSettings();
+      pushSettings();
+      if (!prompterEl.classList.contains('hidden')) { montarPrompter(); aplicarOffset(); atualizarProgresso(); }
+      atualizarRcStatus();
+    }
+
+    ['#rngFonte', '#rngVel', '#chkEspelho', '#chkEspelhoUI'].forEach(sel =>
+      $(sel).addEventListener('input', aplicarAjustes)
     );
+
+    // Botões − / + ao lado dos sliders
+    function passoSlider(sel, delta) {
+      const el = $(sel);
+      const min = parseFloat(el.min), max = parseFloat(el.max);
+      const casas = (el.step && el.step.indexOf('.') !== -1) ? 1 : 0;
+      const v = Math.min(max, Math.max(min, parseFloat(el.value) + delta));
+      el.value = v.toFixed(casas);
+      aplicarAjustes();
+    }
+    $('#btnFonteMenos').addEventListener('click', () => passoSlider('#rngFonte', -2));
+    $('#btnFonteMais').addEventListener('click',  () => passoSlider('#rngFonte',  2));
+    $('#btnVelMenos').addEventListener('click',   () => passoSlider('#rngVel',  -0.1));
+    $('#btnVelMais').addEventListener('click',    () => passoSlider('#rngVel',   0.1));
+
     lerSettings();
 
     /* ===== PAPEL DO DISPOSITIVO ===== */
@@ -670,14 +702,11 @@
       $('#promVazio').classList.toggle('hidden', !vazio);
       promViewport.classList.toggle('hidden', vazio);
 
-      const margemPx = Math.max(20, Settings.margem);
       Pauta.forEach(texto => {
         const div = document.createElement('div');
         div.className = 'block';
         div.textContent = texto;
         div.style.fontSize = Settings.fonte + 'px';
-        div.style.paddingLeft = margemPx + 'px';
-        div.style.paddingRight = margemPx + 'px';
         promTrack.appendChild(div);
       });
       // modoControle é local: anula o espelho somente neste tablet
@@ -780,7 +809,6 @@
         atualizarProgresso();
       }
       lastTime = ts;
-      pollGamepad();
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
@@ -798,46 +826,65 @@
     $('#btnPrev').addEventListener('click', () => pularBloco(-1));
     $('#btnNext').addEventListener('click', () => pularBloco(1));
 
-    /* ===== CONTROLE POR TOQUE NA TELA DO PROMPTER ===== */
-    // Toque simples = play/pause. Arrastar na vertical = ajustar velocidade.
-    (function gestosToque() {
+    /* ===== ROLAGEM MANUAL (TOQUE E MOUSE) ===== */
+    // Toque rápido = play/pause. Arrastar na vertical = rolar a pauta.
+    // A roda do mouse também rola. A velocidade fica só nos botões +/-.
+    let inverterMouse = localStorage.getItem('tvweb_inverterMouse') === '1';
+
+    function rolarPara(novoOffset) {
+      scrollState.offset = Math.max(0, novoOffset);
+      aplicarOffset();
+      atualizarProgresso();
+      pushLiveThrottled(true); // a posição vale para todos, em tempo real
+    }
+
+    (function gestosRolagem() {
       const touchEl = $('#promTouch');
-      let startY = 0, startX = 0, startVel = 0, arrastou = false, tStart = 0;
+      let startY = 0, startX = 0, startOffset = 0, arrastou = false, tStart = 0;
       const LIMIAR = 12; // px para começar a contar como arraste
 
       function inicio(y, x) {
-        startY = y; startX = x; startVel = Settings.velocidade;
+        startY = y; startX = x; startOffset = scrollState.offset;
         arrastou = false; tStart = Date.now();
       }
-      function mover(y, x) {
-        const dy = startY - y;           // para cima = positivo = mais rápido
-        const dx = Math.abs(x - startX);
-        if (!arrastou && (Math.abs(dy) > LIMIAR || dx > LIMIAR)) arrastou = true;
+      function mover(y, x, ehMouse) {
+        const dy = startY - y;   // arrastar para cima avança a pauta
+        if (!arrastou && (Math.abs(dy) > LIMIAR || Math.abs(x - startX) > LIMIAR)) arrastou = true;
         if (!arrastou) return;
-        // 40px de arraste ≈ 1.0 de velocidade
-        let v = startVel + (dy / 40);
-        v = Math.min(10, Math.max(0.1, Math.round(v * 10) / 10));
-        if (v !== Settings.velocidade) {
-          Settings.velocidade = v;
-          $('#rngVel').value = v;
-          atualizarValores();
-          mostrarToastVelocidade();
-          atualizarRcStatus();
-        }
+        const sinal = (ehMouse && inverterMouse) ? -1 : 1;
+        rolarPara(startOffset + dy * sinal);
       }
       function fim() {
-        if (arrastou) { pushLive(); pushSettings(); }   // confirmou nova velocidade
+        if (arrastou) pushLive(true);                     // posição final exata
         else if (Date.now() - tStart < 400) togglePlay(); // toque rápido = play/pause
       }
 
       touchEl.addEventListener('touchstart', (e) => { const t = e.touches[0]; inicio(t.clientY, t.clientX); }, { passive: true });
-      touchEl.addEventListener('touchmove',  (e) => { const t = e.touches[0]; mover(t.clientY, t.clientX); }, { passive: true });
+      touchEl.addEventListener('touchmove',  (e) => { const t = e.touches[0]; mover(t.clientY, t.clientX, false); }, { passive: true });
       touchEl.addEventListener('touchend', fim);
-      // Mouse (para testar no desktop)
+
       let mouseDown = false;
       touchEl.addEventListener('mousedown', (e) => { mouseDown = true; inicio(e.clientY, e.clientX); });
-      touchEl.addEventListener('mousemove', (e) => { if (mouseDown) mover(e.clientY, e.clientX); });
+      touchEl.addEventListener('mousemove', (e) => { if (mouseDown) mover(e.clientY, e.clientX, true); });
       touchEl.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; fim(); } });
+      touchEl.addEventListener('mouseleave', () => { if (mouseDown) { mouseDown = false; fim(); } });
+
+      // Roda do mouse
+      touchEl.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        rolarPara(scrollState.offset + e.deltaY * (inverterMouse ? -1 : 1));
+      }, { passive: false });
+    })();
+
+    /* ===== INVERTER MOUSE (só aparece quando há um ponteiro fino) ===== */
+    (function opcaoInverterMouse() {
+      const temMouse = window.matchMedia && window.matchMedia('(any-pointer: fine)').matches;
+      $('#labelInverterMouse').classList.toggle('hidden', !temMouse);
+      $('#chkInverterMouse').checked = inverterMouse;
+      $('#chkInverterMouse').addEventListener('change', () => {
+        inverterMouse = $('#chkInverterMouse').checked;
+        localStorage.setItem('tvweb_inverterMouse', inverterMouse ? '1' : '0');
+      });
     })();
 
     /* ===== BLACKOUT ===== */
@@ -845,23 +892,6 @@
       $('#blackout').classList.toggle('hidden');
       pushLive(); // o blackout vale para todos os dispositivos da sessão
     }
-
-    /* ===== CRONÓMETRO ===== */
-    let cronoSegundos = 0, cronoInterval = null;
-    const cronoTexto = $('#cronoTexto');
-    function fmt(s) {
-      const h = String(Math.floor(s / 3600)).padStart(2, '0');
-      const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-      const ss = String(s % 60).padStart(2, '0');
-      return h + ':' + m + ':' + ss;
-    }
-    function cronoTick() { cronoSegundos++; cronoTexto.textContent = fmt(cronoSegundos); }
-    function cronoStart() { if (cronoInterval) return; cronoInterval = setInterval(cronoTick, 1000); cronoTexto.style.color = '#FF5252'; }
-    function cronoPause() { clearInterval(cronoInterval); cronoInterval = null; cronoTexto.style.color = '#FFC107'; }
-    function cronoReset() { cronoPause(); cronoSegundos = 0; cronoTexto.textContent = '00:00:00'; cronoTexto.style.color = '#42b72a'; }
-    $('#cStart').addEventListener('click', cronoStart);
-    $('#cPause').addEventListener('click', cronoPause);
-    $('#cReset').addEventListener('click', cronoReset);
 
     /* ===== WAKE LOCK (tela não apaga) + TRAVA DE ORIENTAÇÃO ===== */
     let wakeLock = null;
@@ -885,6 +915,18 @@
       try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     }
 
+    /* ===== DICA DE USO NO PROMPTER ===== */
+    let dicaTimeout = null;
+    function mostrarDicaPrompter() {
+      const d = $('#promDica');
+      clearTimeout(dicaTimeout);
+      d.classList.remove('hidden', 'fade');
+      dicaTimeout = setTimeout(() => {
+        d.classList.add('fade');
+        setTimeout(() => d.classList.add('hidden'), 400);
+      }, 4000);
+    }
+
     /* ===== INICIAR / VOLTAR ===== */
     function iniciarPrompter() {
       lerSettings();
@@ -893,6 +935,7 @@
       atualizarProgresso();
       $('#blackout').classList.add('hidden');
       showPrompter();
+      mostrarDicaPrompter();
       ativarWakeLock();
       travarPaisagem();
       pushLive(true);
@@ -948,7 +991,7 @@
        Todo o estado compartilhado passa pelo servidor local
        (server.js, rodando no Termux de um dos dispositivos):
          pauta     -> array de blocos
-         settings  -> { fonte, margem, velocidade, espelho, espelhoUI }
+         settings  -> { fonte, velocidade, espelho, espelhoUI }
          live      -> { playing, offset, velocidade, prompter, gen, by }
        Cada dispositivo envia suas mudanças por POST /update e ouve as
        dos outros por SSE em /events. A flag "aplicandoRemoto" evita o
@@ -963,6 +1006,9 @@
 
     function atualizarIndicadorPrompter() {
       $('#syncIndicador').classList.toggle('hidden', !srvConectado);
+      const pill = $('#pillConexao');
+      pill.textContent = srvConectado ? '✔ Conectado ao servidor' : 'Sozinho neste aparelho';
+      pill.classList.toggle('on', srvConectado);
       atualizarRcStatus();
     }
 
@@ -975,7 +1021,7 @@
     function pushSettings() {
       if (aplicandoRemoto) return;
       const s = {
-        fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
+        fonte: Settings.fonte, velocidade: Settings.velocidade,
         espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
       };
       salvarSettingsLocal();
@@ -997,6 +1043,25 @@
       enviarSrv('live', payload);
     }
 
+    // Rolagem manual dispara muitos eventos por segundo. Envia no máximo a
+    // cada 80 ms e garante um envio final, para o outro tablet acompanhar em
+    // tempo real sem afogar o servidor.
+    let pushLiveUltimo = 0, pushLivePendente = null;
+    function pushLiveThrottled(bumpGen) {
+      const agora = Date.now();
+      const espera = 80 - (agora - pushLiveUltimo);
+      if (espera <= 0) {
+        pushLiveUltimo = agora;
+        pushLive(bumpGen);
+      } else if (!pushLivePendente) {
+        pushLivePendente = setTimeout(() => {
+          pushLivePendente = null;
+          pushLiveUltimo = Date.now();
+          pushLive(bumpGen);
+        }, espera);
+      }
+    }
+
     // ----- LEITURAS (do servidor para este dispositivo) -----
     function aplicarPautaRemota(dados) {
       if (!Array.isArray(dados)) dados = [];
@@ -1012,7 +1077,6 @@
       if (!s) return;
       aplicandoRemoto = true;
       if (typeof s.fonte === 'number')      { $('#rngFonte').value = s.fonte; }
-      if (typeof s.margem === 'number')     { $('#rngMargem').value = s.margem; }
       if (typeof s.velocidade === 'number') { $('#rngVel').value = s.velocidade; }
       if (typeof s.espelho === 'boolean')   { $('#chkEspelho').checked = s.espelho; }
       if (typeof s.espelhoUI === 'boolean') { $('#chkEspelhoUI').checked = s.espelhoUI; }
@@ -1065,46 +1129,13 @@
       atualizarRcStatus();
     }
 
-    /* ===== QR DE ACESSO ===== */
-    $('#btnGerarQr').addEventListener('click', () => {
-      const url = srvBase ? srvBase + '/' : window.location.href;
-      const qrBox = $('#qrAcesso');
-      const canvas = $('#qrAcessoImg');
-      const qr = qrcode(0, 'M');
-      qr.addData(url);
-      qr.make();
-      // Desenha no canvas
-      const modules = qr.getModuleCount();
-      const cell = Math.floor(Math.min(window.innerWidth * 0.85, 380) / modules);
-      canvas.width = modules * cell;
-      canvas.height = modules * cell;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#000000';
-      for (let r = 0; r < modules; r++) {
-        for (let c = 0; c < modules; c++) {
-          if (qr.isDark(r, c)) ctx.fillRect(c * cell, r * cell, cell, cell);
-        }
-      }
-      $('#qrAcessoUrl').textContent = url;
-      qrBox.classList.add('show');
-    });
-
     /* ============================================================
        ===== SERVIDOR LOCAL (SINCRONIZAÇÃO VIA SSE) =====
        ============================================================
        Cliente do servidor server.js: recebe atualizações por SSE
-       (/events) e envia mudanças por POST (/update). Sem QR, sem
-       câmera, sem internet — só a rede local entre os tablets.
+       (/events) e envia mudanças por POST (/update). Sem internet —
+       só a rede local entre os aparelhos.
     */
-    function setSrvStatus(estado, texto) {
-      const el = $('#srvStatus');
-      el.classList.remove('on', 'wait', 'err');
-      if (estado) el.classList.add(estado);
-      el.textContent = texto;
-    }
-
     function enviarSrv(kind, data) {
       if (!srvBase) return;
       fetch(srvBase + '/update', {
@@ -1118,44 +1149,35 @@
       if (srvEvents) { try { srvEvents.close(); } catch (e) {} }
       srvEvents = null; srvBase = null; srvConectado = false; srvRecebeuPauta = false;
       atualizarIndicadorPrompter();
-      $('#btnSrv').textContent = 'Conectar';
-      $('#btnSrv').classList.remove('conectado');
-      setSrvStatus('', 'Desconectado.');
     }
 
     function conectarServidor(base) {
       desconectarServidor();
       srvBase = String(base || '').trim().replace(/\/+$/, '');
-      if (!srvBase) { setSrvStatus('err', 'Informe o endereço do servidor.'); return; }
-      setSrvStatus('wait', 'Conectando…');
+      if (!srvBase) return;
       try {
         srvEvents = new EventSource(srvBase + '/events');
       } catch (e) {
-        setSrvStatus('err', 'Endereço inválido.'); srvBase = null; return;
+        srvBase = null; return;
       }
 
       srvEvents.onopen = () => {
         srvConectado = true;
-        setSrvStatus('on', '🔗 Conectado ao servidor.');
         atualizarIndicadorPrompter();
-        $('#btnSrv').textContent = 'Desconectar';
-        $('#btnSrv').classList.add('conectado');
-        localStorage.setItem('tvweb_srv', srvBase);
         // Se o servidor estiver vazio e este tablet já tiver pauta, semeia o estado.
         setTimeout(() => {
           if (srvConectado && !srvRecebeuPauta && Pauta.length) {
             enviarSrv('pauta', Pauta);
             enviarSrv('settings', {
-              fonte: Settings.fonte, margem: Settings.margem, velocidade: Settings.velocidade,
+              fonte: Settings.fonte, velocidade: Settings.velocidade,
               espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
             });
           }
         }, 800);
       };
 
+      // O EventSource tenta reconectar sozinho; o indicador do topo mostra o estado.
       srvEvents.onerror = () => {
-        if (srvConectado) setSrvStatus('err', 'Conexão perdida. Tentando reconectar…');
-        else setSrvStatus('err', 'Não foi possível conectar ao servidor.');
         srvConectado = false;
         atualizarIndicadorPrompter();
       };
@@ -1170,104 +1192,32 @@
       };
     }
 
-    $('#btnSrv').addEventListener('click', () => {
-      if (srvConectado || srvBase) desconectarServidor();
-      else conectarServidor($('#inputSrv').value);
-    });
-
-    // Pré-preenche e conecta automaticamente quando o app é aberto PELO servidor
-    // (servido por http://, diferente do Netlify que é https).
+    // Conecta sozinho quando o app é aberto PELO servidor (endereço http://).
+    // Não há endereço para digitar: quem abre pelo servidor já entra sincronizado.
     (function iniciarServidor() {
-      const salvo = localStorage.getItem('tvweb_srv');
-      if (salvo) $('#inputSrv').value = salvo;
       if (location.protocol === 'http:' && location.hostname) {
-        $('#inputSrv').value = location.origin;
-        conectarServidor(location.origin); // automático
+        conectarServidor(location.origin);
       }
     })();
 
     /* ============================================================
-       ===== CONTROLE BLUETOOTH: MAPEAMENTO DE BOTÕES =====
+       ===== ATALHOS DE TECLADO (apresentadores / remotos) =====
        ============================================================
-       Cada ação pode ser ligada a uma tecla (apresentadores/remotos
-       que enviam teclado) OU a um botão de gamepad (Gamepad API).
-       O mapeamento fica salvo no navegador (localStorage).
+       Apresentadores e remotos Bluetooth aparecem para o navegador
+       como teclado. As teclas abaixo são fixas e valem tanto com o
+       prompter aberto quanto no painel de Controle Remoto.
     */
-    const ACOES = [
-      { id: 'play',     nome: 'Play / Pausar' },
-      { id: 'up',       nome: 'Aumentar velocidade' },
-      { id: 'down',     nome: 'Diminuir velocidade' },
-      { id: 'next',     nome: 'Próximo bloco' },
-      { id: 'prev',     nome: 'Bloco anterior' },
-      { id: 'blackout', nome: 'Tela preta (blackout)' }
-    ];
-
-    // Mapeamento padrão (teclado) — já funciona antes de remapear
-    const KeyMapPadrao = {
-      play:     { type: 'key', code: 'Space',      label: 'Espaço' },
-      up:       { type: 'key', code: 'ArrowUp',    label: 'Seta Cima' },
-      down:     { type: 'key', code: 'ArrowDown',  label: 'Seta Baixo' },
-      next:     { type: 'key', code: 'ArrowRight', label: 'Seta Direita' },
-      prev:     { type: 'key', code: 'ArrowLeft',  label: 'Seta Esquerda' },
-      blackout: { type: 'key', code: 'Escape',     label: 'Esc' }
+    const ATALHOS = {
+      Space:      'play',
+      ArrowUp:    'up',
+      ArrowDown:  'down',
+      ArrowRight: 'next',
+      ArrowLeft:  'prev',
+      PageDown:   'next',
+      PageUp:     'prev',
+      Escape:     'blackout'
     };
 
-    let KeyMap = JSON.parse(JSON.stringify(KeyMapPadrao));
-    let actionToMap = null; // ação aguardando captura de botão
-
-    try {
-      const salvo = localStorage.getItem('tvweb_keymap');
-      if (salvo) KeyMap = Object.assign({}, KeyMapPadrao, JSON.parse(salvo));
-    } catch (e) {}
-
-    function salvarKeyMap() { localStorage.setItem('tvweb_keymap', JSON.stringify(KeyMap)); }
-
-    function cancelarMapeamento() { actionToMap = null; renderMapeamento(); }
-
-    function renderMapeamento() {
-      const cont = $('#listaMapeamento');
-      cont.innerHTML = '';
-      ACOES.forEach(acao => {
-        const bind = KeyMap[acao.id];
-        const item = document.createElement('div');
-        item.className = 'map-item';
-
-        const nome = document.createElement('span');
-        nome.className = 'map-nome';
-        nome.textContent = acao.nome;
-
-        const bindEl = document.createElement('span');
-        bindEl.className = 'map-bind';
-        if (actionToMap === acao.id) {
-          bindEl.classList.add('aguardando');
-          bindEl.textContent = 'Pressione…';
-        } else {
-          bindEl.textContent = bind ? bind.label : '—';
-        }
-
-        const btnMap = document.createElement('button');
-        btnMap.className = 'b-map';
-        btnMap.textContent = (actionToMap === acao.id) ? 'Cancelar' : 'Mapear';
-        btnMap.onclick = () => {
-          if (actionToMap === acao.id) { cancelarMapeamento(); }
-          else { actionToMap = acao.id; renderMapeamento(); }
-        };
-
-        const btnClr = document.createElement('button');
-        btnClr.textContent = '✕';
-        btnClr.title = 'Remover';
-        btnClr.onclick = () => { delete KeyMap[acao.id]; salvarKeyMap(); cancelarMapeamento(); };
-
-        item.appendChild(nome);
-        item.appendChild(bindEl);
-        item.appendChild(btnMap);
-        item.appendChild(btnClr);
-        cont.appendChild(item);
-      });
-    }
-    renderMapeamento();
-
-    // Dispara a ação correspondente
     function dispararAcao(id) {
       switch (id) {
         case 'play':     togglePlay(); break;
@@ -1289,102 +1239,11 @@
              !$('#painelControle').classList.contains('hidden');
     }
 
-    function acaoPorBotao(predicate) {
-      for (const id in KeyMap) {
-        if (KeyMap[id] && predicate(KeyMap[id])) return id;
-      }
-      return null;
-    }
-
-    /* ----- Captura por TECLADO (apresentadores/remotos BT) ----- */
     document.addEventListener('keydown', (e) => {
-      if (actionToMap) {
-        e.preventDefault();
-        let label = e.key;
-        if (label === ' ') label = 'Espaço';
-        if (e.code.startsWith('Arrow')) label = 'Seta ' + e.code.replace('Arrow', '');
-        else if (e.code === 'Enter') label = 'Enter';
-        else if (e.code === 'Escape') label = 'Esc';
-        else if (label.length === 1) label = label.toUpperCase();
-        KeyMap[actionToMap] = { type: 'key', code: e.code, label: label };
-        salvarKeyMap();
-        cancelarMapeamento();
-        return;
-      }
       if (!controlesAtivos()) return;
-      const id = acaoPorBotao(m => m.type === 'key' && m.code === e.code);
+      const id = ATALHOS[e.code];
       if (id) { e.preventDefault(); dispararAcao(id); }
     });
-
-    /* ----- Captura por GAMEPAD (Gamepad API) ----- */
-    const padPrev = {};
-    let padDetectado = false;
-
-    function onPadPress(index) {
-      if (actionToMap) {
-        KeyMap[actionToMap] = { type: 'pad', index: index, label: 'Botão ' + index };
-        salvarKeyMap();
-        cancelarMapeamento();
-        return;
-      }
-      if (!controlesAtivos()) return;
-      const id = acaoPorBotao(m => m.type === 'pad' && m.index === index);
-      if (id) dispararAcao(id);
-    }
-
-    function pollGamepad() {
-      if (!navigator.getGamepads) return;
-      const pads = navigator.getGamepads();
-      const selIdx = $('#selGamepad').value;
-      let algum = false;
-      for (const pad of pads) {
-        if (!pad) continue;
-        algum = true;
-        if (selIdx && String(pad.index) !== selIdx) continue;
-        pad.buttons.forEach((btn, idx) => {
-          const key = pad.index + ':' + idx;
-          const pressed = btn.pressed || btn.value > 0.5;
-          if (pressed && !padPrev[key]) onPadPress(idx);
-          padPrev[key] = pressed;
-        });
-      }
-      if (algum !== padDetectado) {
-        padDetectado = algum;
-        atualizarSelGamepad();
-      }
-    }
-
-    /* ===== ACCORDION BLUETOOTH ===== */
-    $('#mapHeader').addEventListener('click', () => {
-      const body = $('#mapBody');
-      const arrow = $('#mapArrow');
-      const aberto = body.classList.toggle('aberto');
-      arrow.classList.toggle('aberto', aberto);
-    });
-
-    /* ===== SELETOR DE GAMEPAD ===== */
-    function atualizarSelGamepad() {
-      const sel = $('#selGamepad');
-      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-      const anterior = sel.value;
-      sel.innerHTML = '<option value="">— Nenhum selecionado —</option>';
-      let algum = false;
-      for (const pad of pads) {
-        if (!pad) continue;
-        algum = true;
-        const opt = document.createElement('option');
-        opt.value = String(pad.index);
-        opt.textContent = pad.id || ('Gamepad ' + pad.index);
-        if (String(pad.index) === anterior) opt.selected = true;
-        sel.appendChild(opt);
-      }
-      const el = $('#padStatus');
-      el.classList.toggle('on', algum);
-      el.textContent = algum ? '🎮 Gamepad conectado.' : 'Nenhum gamepad detectado (controles de tecla funcionam mesmo assim).';
-    }
-
-    window.addEventListener('gamepadconnected', atualizarSelGamepad);
-    window.addEventListener('gamepaddisconnected', atualizarSelGamepad);
 
     // Aplicar papel APÓS tudo estar definido (evita chamar funções ainda não declaradas)
     aplicarPapel(papelAtual);
