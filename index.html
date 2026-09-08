@@ -368,9 +368,9 @@
       <summary>Salvar ou abrir um texto do aparelho</summary>
       <div class="ajuda-corpo">
         <div class="arquivos">
-          <label class="link-arq">Importar TXT<input type="file" id="fileTxt" accept=".txt" hidden></label>
+          <label class="link-arq">Importar TXT ou Word<input type="file" id="fileTxt" accept=".txt,.text,.md,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label>
           <button id="btnSalvar">Salvar pauta</button>
-          <label class="link-arq">Carregar pauta<input type="file" id="fileJson" accept=".json" hidden></label>
+          <label class="link-arq">Carregar pauta<input type="file" id="fileJson" accept=".json,application/json" hidden></label>
         </div>
         <p class="dica">O texto já fica guardado sozinho neste aparelho. Isto
         aqui é só para levar o texto para outro lugar.</p>
@@ -1081,11 +1081,150 @@
     }
     $('#btnSalvar').addEventListener('click', salvarPauta);
 
-    $('#fileTxt').addEventListener('change', (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      const r = new FileReader();
-      r.onload = () => { addBloco(r.result); e.target.value = ''; };
-      r.readAsText(f, 'utf-8');
+    /* ----- Importar texto: TXT (qualquer codificacao) e Word .docx -----
+       O .docx e um ZIP. O navegador ja sabe descompactar (DecompressionStream),
+       entao da para ler o texto sem biblioteca nenhuma e sem internet. */
+
+    // TXT salvo pelo Word costuma vir em ANSI ou UTF-16, nao em UTF-8. Ler
+    // sempre como UTF-8 estragava os acentos - dai a deteccao pelo BOM com
+    // queda para windows-1252.
+    function decodificarTexto(buffer) {
+      const b = new Uint8Array(buffer);
+      if (b.length >= 3 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) {
+        return new TextDecoder('utf-8').decode(b.subarray(3));
+      }
+      if (b.length >= 2 && b[0] === 0xFF && b[1] === 0xFE) {
+        return new TextDecoder('utf-16le').decode(b.subarray(2));
+      }
+      if (b.length >= 2 && b[0] === 0xFE && b[1] === 0xFF) {
+        return new TextDecoder('utf-16be').decode(b.subarray(2));
+      }
+      try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(b);
+      } catch (e) {
+        return new TextDecoder('windows-1252').decode(b);
+      }
+    }
+
+    // Um arquivo inteiro virava um bloco so. Agora cada trecho separado por
+    // linha em branco vira um bloco, o que e o que faz os saltos servirem.
+    function blocosDoTexto(texto) {
+      const limpo = String(texto || '').replace(/\r\n?/g, '\n');
+      let partes = limpo.split(/\n[ \t]*\n+/);
+      if (partes.length === 1) partes = limpo.split(/\n+/); // sem linhas em branco: uma por linha
+      return partes.map((t) => t.trim()).filter(Boolean);
+    }
+
+    // ----- Leitura do .docx -----
+    async function inflarRaw(u8) {
+      const fluxo = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return new Uint8Array(await new Response(fluxo).arrayBuffer());
+    }
+
+    // Acha um arquivo dentro do ZIP pelo diretorio central (os tamanhos ali
+    // sao sempre confiaveis, ao contrario do cabecalho local).
+    async function arquivoDoZip(buffer, alvo) {
+      const bytes = new Uint8Array(buffer);
+      const dv = new DataView(buffer);
+      let eocd = -1;
+      const limite = Math.max(0, bytes.length - 22 - 65535);
+      for (let i = bytes.length - 22; i >= limite; i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+      }
+      if (eocd < 0) return null;
+
+      let ponto = dv.getUint32(eocd + 16, true);
+      const total = dv.getUint16(eocd + 10, true);
+      for (let n = 0; n < total; n++) {
+        if (ponto + 46 > bytes.length || dv.getUint32(ponto, true) !== 0x02014b50) return null;
+        const metodo   = dv.getUint16(ponto + 10, true);
+        const compSize = dv.getUint32(ponto + 20, true);
+        const nomeLen  = dv.getUint16(ponto + 28, true);
+        const extraLen = dv.getUint16(ponto + 30, true);
+        const comLen   = dv.getUint16(ponto + 32, true);
+        const offLocal = dv.getUint32(ponto + 42, true);
+        const nome = new TextDecoder('utf-8').decode(bytes.subarray(ponto + 46, ponto + 46 + nomeLen));
+
+        if (nome === alvo) {
+          const lNome  = dv.getUint16(offLocal + 26, true);
+          const lExtra = dv.getUint16(offLocal + 28, true);
+          const ini = offLocal + 30 + lNome + lExtra;
+          const dados = bytes.subarray(ini, ini + compSize);
+          if (metodo === 0) return dados;            // guardado sem compressao
+          if (metodo === 8) return await inflarRaw(dados); // deflate
+          return null;                                // metodo exotico
+        }
+        ponto += 46 + nomeLen + extraLen + comLen;
+      }
+      return null;
+    }
+
+    const NS_W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+    function textoDoDocumentXml(xml) {
+      const doc = new DOMParser().parseFromString(xml, 'application/xml');
+      if (doc.getElementsByTagName('parsererror').length) return null;
+      const paragrafos = doc.getElementsByTagNameNS(NS_W, 'p');
+      const linhas = [];
+      for (const par of paragrafos) {
+        let texto = '';
+        // Percorre na ordem do documento para respeitar as quebras de linha.
+        const nos = par.getElementsByTagNameNS(NS_W, '*');
+        for (const no of nos) {
+          if (no.localName === 't') texto += no.textContent;
+          else if (no.localName === 'br' || no.localName === 'cr') texto += '\n';
+          else if (no.localName === 'tab') texto += ' ';
+        }
+        linhas.push(texto.trim());
+      }
+      return linhas.join('\n');
+    }
+
+    async function lerDocx(buffer) {
+      if (typeof DecompressionStream === 'undefined') {
+        throw new Error('Este navegador não abre .docx. Salve o texto como .txt e importe de novo.');
+      }
+      const doc = await arquivoDoZip(buffer, 'word/document.xml');
+      if (!doc) throw new Error('Não consegui ler o conteúdo do arquivo Word. Ele pode estar corrompido ou protegido por senha.');
+      const texto = textoDoDocumentXml(new TextDecoder('utf-8').decode(doc));
+      if (texto === null) throw new Error('O conteúdo do arquivo Word veio corrompido.');
+      return texto;
+    }
+
+    // ----- Botao Importar -----
+    $('#fileTxt').addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      e.target.value = '';           // permite reimportar o mesmo arquivo
+      if (!f) return;
+
+      const nome = (f.name || '').toLowerCase();
+      try {
+        const buffer = await f.arrayBuffer();
+        let texto;
+
+        if (nome.endsWith('.doc')) {
+          throw new Error('Arquivo .doc antigo não dá. No Word, use "Salvar como" e escolha .docx ou .txt.');
+        } else if (nome.endsWith('.docx')) {
+          texto = await lerDocx(buffer);
+        } else {
+          texto = decodificarTexto(buffer);
+        }
+
+        const blocos = blocosDoTexto(texto);
+        if (!blocos.length) {
+          showModal('O arquivo está vazio ou não tem texto que eu consiga ler.', null);
+          return;
+        }
+
+        blocos.forEach((b) => Pauta.push(b.toUpperCase()));
+        renderLista();
+        pushPauta();
+        showModal('Importado: ' + blocos.length +
+                  (blocos.length === 1 ? ' bloco.' : ' blocos.'), null);
+      } catch (err) {
+        console.error(err);
+        showModal(err && err.message ? err.message : 'Não consegui ler este arquivo.', null);
+      }
     });
 
     $('#fileJson').addEventListener('change', (e) => {
@@ -1197,16 +1336,24 @@
     function aplicarSettingsRemoto(s) {
       if (!s) return;
       aplicandoRemoto = true;
+      const fonteAntes = Settings.fonte;
       if (typeof s.fonte === 'number')      { $('#rngFonte').value = s.fonte; }
       if (typeof s.velocidade === 'number') { $('#rngVel').value = s.velocidade; }
       if (typeof s.espelho === 'boolean')   { $('#chkEspelho').checked = s.espelho; }
       if (typeof s.espelhoUI === 'boolean') { $('#chkEspelhoUI').checked = s.espelhoUI; }
       lerSettings();
       salvarSettingsLocal();
-      // reflete espelhamento na hora se o prompter estiver aberto
       if (!prompterEl.classList.contains('hidden')) {
-        prompterEl.classList.toggle('espelhado', Settings.espelho && !modoControle);
-        prompterEl.classList.toggle('espelha-ui', Settings.espelhoUI);
+        // O tamanho da letra vive no style de cada bloco: sem remontar, a
+        // mudanca chegaria como valor mas nao apareceria na tela.
+        if (Settings.fonte !== fonteAntes) {
+          montarPrompter();
+          aplicarOffset();
+          atualizarProgresso();
+        } else {
+          prompterEl.classList.toggle('espelhado', Settings.espelho && !modoControle);
+          prompterEl.classList.toggle('espelha-ui', Settings.espelhoUI);
+        }
       }
       aplicandoRemoto = false;
     }

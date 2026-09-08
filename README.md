@@ -28,6 +28,23 @@ Na tela do prompter:
 
 O texto fica salvo sozinho no aparelho. Fechar o app não apaga nada.
 
+### Trazer o texto de um arquivo
+
+Em *Passo 2 → Salvar ou abrir um texto do aparelho* há **Importar TXT ou Word**.
+Aceita:
+
+- **`.txt`** em qualquer codificação (o TXT que o Word gera costuma ser ANSI ou
+  UTF-16, não UTF-8 — o app detecta sozinho e os acentos saem certos).
+- **`.docx`** — o Word moderno. É lido direto no aparelho, sem internet e sem
+  mandar o arquivo para lugar nenhum.
+
+Cada trecho separado por **linha em branco** vira um bloco. Assim os botões de
+pular bloco funcionam. Se o arquivo não tiver linhas em branco, cada linha vira
+um bloco.
+
+> **`.doc`** (Word antigo, antes de 2007) não abre. No Word, use *Salvar como* e
+> escolha `.docx` ou `.txt`.
+
 > **Espelhar texto** já vem ligado. Isso é para quem usa um vidro/espelho na
 > frente da câmera. Se você lê direto da tela, desligue no Passo 3.
 
