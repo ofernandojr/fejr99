@@ -4,20 +4,48 @@
 
 PROJ="$(cd "$(dirname "$0")/.." && pwd)"
 PORTA="${PORT:-8080}"
+BUSCA="$PROJ/scripts/achar-servidor.js"
 
 clear
 echo "=============================================="
 echo "        TVWEB PROMPTER — CONECTAR"
 echo "=============================================="
 echo ""
-echo "[..] Procurando o servidor na rede..."
-echo "     (varre a rede inteira; leva uns segundos)"
 
-# A busca e feita pelo Node: le as interfaces deste aparelho, varre a
-# sub-rede em paralelo e confirma que quem respondeu e mesmo o Prompter.
-# A versao antiga so testava 4 enderecos fixos e falhava em qualquer
-# rede fora deles.
-URL_ENCONTRADO=$(node "$PROJ/scripts/achar-servidor.js" "$PORTA" 2>/dev/null)
+# ---- checagens que antes falhavam em silencio ----
+if ! command -v node >/dev/null 2>&1; then
+  echo "  [ERRO] O Node nao esta instalado NESTE"
+  echo "         aparelho. Rode:"
+  echo ""
+  echo "         pkg install nodejs"
+  echo ""
+  echo "Pressione ENTER para fechar..."
+  read -r x
+  exit 1
+fi
+
+if [ ! -f "$BUSCA" ]; then
+  echo "  [ERRO] Este aparelho esta com uma versao"
+  echo "         antiga do projeto."
+  echo ""
+  echo "         Toque em 'Atualizar Tp' e depois"
+  echo "         tente de novo."
+  echo ""
+  echo "         (Cada aparelho tem a sua propria"
+  echo "          copia: atualizar um nao atualiza"
+  echo "          o outro.)"
+  echo ""
+  echo "Pressione ENTER para fechar..."
+  read -r x
+  exit 1
+fi
+
+echo "[..] Procurando o servidor na rede..."
+echo ""
+
+# O --diag imprime em stderr o que ele conseguiu descobrir da rede.
+# Fica visivel de proposito: se falhar, da para ver o porque.
+URL_ENCONTRADO=$(node "$BUSCA" "$PORTA" --diag)
 
 echo ""
 echo "=============================================="
@@ -36,25 +64,24 @@ else
   echo "  SERVIDOR NAO ENCONTRADO"
   echo "=============================================="
   echo ""
-  echo "  Confira, na ordem:"
+  echo "  Olhe as linhas acima: elas dizem quais"
+  echo "  redes este aparelho conseguiu enxergar."
   echo ""
-  echo "  1. No aparelho servidor, o atalho"
-  echo "     'Iniciar Servidor' esta rodando?"
+  echo "  Se disserem 'nenhuma', o Android nao deixou"
+  echo "  o Termux ler a rede. Nesse caso digite o"
+  echo "  endereco a mao (passo abaixo)."
+  echo ""
+  echo "  Confira tambem:"
+  echo "  1. No aparelho servidor, o 'Iniciar"
+  echo "     Servidor' esta rodando?"
   echo "  2. O hotspot dele esta ligado?"
   echo "  3. Este aparelho esta conectado nesse"
   echo "     hotspot (ou na mesma Wi-Fi)?"
   echo ""
-  echo "  Enderecos que ESTE aparelho enxerga:"
-  ip -4 addr 2>/dev/null \
-    | awk '/inet / && !/127\.0\.0\.1/ {gsub(/\/.*/, "", $2); print "      " $2}'
-  echo ""
-  echo "  Eles precisam comecar com os mesmos tres"
-  echo "  numeros do endereco que o servidor mostrou."
-  echo "  Se nao comecarem, os dois aparelhos estao"
-  echo "  em redes diferentes."
-  echo ""
-  echo "  Ultimo recurso: olhe o endereco na tela do"
-  echo "  'Iniciar Servidor' e digite no navegador."
+  echo "  SEMPRE FUNCIONA: olhe o endereco na tela"
+  echo "  do 'Iniciar Servidor' (ou aponte a camera"
+  echo "  para o QR que ele mostra) e abra no"
+  echo "  navegador deste aparelho."
 fi
 echo ""
 echo "=============================================="

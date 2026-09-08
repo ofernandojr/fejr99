@@ -142,7 +142,7 @@ aparelho liga.
 | `No command run found` | Você digitou a frase `Run 'apt list --upgradable'`, que é só um aviso do Termux, não um comando. Ignore. |
 | `22 packages can be upgraded` | Só um aviso. Não precisa fazer nada. |
 | `Unable to locate package qrencode` | Esse pacote não existe no Termux e não é mais necessário — instale só `nodejs git`. |
-| **Conectar Tp** não acha o servidor | Ele varre a rede inteira e mostra os endereços que este aparelho enxerga. Se não começarem com os mesmos três números do endereço do servidor, os dois estão em redes diferentes. |
+| **Conectar Tp** não acha o servidor | Ele mostra na tela quais redes conseguiu enxergar. Veja a seção abaixo. |
 | `Authentication failed` no `git clone` | O repositório precisa estar público. Confira em <https://github.com/ofernandojr/tptvweb>. |
 
 ### Usar no dia a dia
@@ -190,6 +190,25 @@ Aparece em dois lugares, os dois com o mesmo endereço:
 Os dois levam sempre o **endereço de rede**, nunca `localhost`. Mesmo quando você
 abre o app por `http://localhost:8080`, ele pergunta ao servidor qual é o IP da
 rede e monta o QR com ele — `localhost` só valeria no próprio aparelho.
+
+### Quando o "Conectar Tp" não acha o servidor
+
+Ele varre a rede inteira e imprime o que descobriu antes de desistir. Leia
+essas linhas:
+
+- **Mostrou endereços e redes, mas não achou** — os dois aparelhos provavelmente
+  estão em redes diferentes. Os endereços precisam começar com os mesmos três
+  números do que o servidor mostrou.
+- **Disse `nenhuma` em todas as fontes** — o Android bloqueou a leitura da rede
+  para o Termux (acontece do Android 11 em diante). Não há o que consertar no
+  script: use o QR ou digite o endereço.
+- **Disse que este aparelho está com versão antiga** — cada aparelho tem a sua
+  própria cópia do projeto. Atualizar um não atualiza o outro. Rode
+  **Atualizar Tp** neste aparelho.
+
+Sempre funciona, em qualquer caso: aponte a câmera para o **QR Code** que a tela
+do **Iniciar Servidor** mostra, ou digite no navegador o endereço que aparece
+ali.
 
 ### Comandar do outro aparelho
 

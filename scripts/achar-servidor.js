@@ -2,58 +2,69 @@
 /* ============================================================
    TVWEB Prompter — procura o servidor na rede local.
 
-   Uso:  node scripts/achar-servidor.js [porta]
-   Saida: imprime a URL encontrada e sai com 0; sai com 1 se nao achou.
+   Uso:  node scripts/achar-servidor.js [porta] [--diag]
+   Saida: imprime a URL encontrada em stdout, sai com 0.
+          Sai com 1 se nao achou. Com --diag, explica em stderr
+          o que conseguiu descobrir da rede.
 
-   A versao antiga testava so 4 enderecos fixos (192.168.43.1 e
-   companhia) e falhava em qualquer rede fora desses. Aqui a
-   sub-rede vem das interfaces deste proprio aparelho e e varrida
-   inteira, em paralelo. Alem da porta, confere se quem respondeu
-   e mesmo o Prompter — porta 8080 aberta pode ser outra coisa.
+   Descobrir a rede no Android nao e garantido: a partir do
+   Android 11 um app comum (o Termux e um) pode receber so o
+   loopback de getifaddrs(), o que cega tanto o Node quanto o
+   "ip addr". Por isso aqui as pistas vem de varias fontes e o
+   modo --diag mostra quais funcionaram.
    ============================================================ */
 const net = require('net');
 const http = require('http');
-const os = require('os');
+const rede = require('./rede.js');
 
 const PORTA = parseInt(process.argv[2], 10) || 8080;
-const TIMEOUT_PORTA = 400;   // ms por endereco no teste de porta
-const TIMEOUT_HTTP = 1500;   // ms para confirmar que e o Prompter
+const DIAG = process.argv.indexOf('--diag') !== -1;
+const TIMEOUT_PORTA = 400;
+const TIMEOUT_HTTP = 1500;
 const PARALELO = 64;
 
-// ---- enderecos a testar ----
+const diag = (msg) => { if (DIAG) process.stderr.write('      ' + msg + '\n'); };
+const base24 = (ip) => ip.split('.').slice(0, 3).join('.');
+
+// ---------- monta a lista de enderecos a testar ----------
 function alvos() {
   const lista = [];
   const vistos = new Set();
-  const add = (ip) => { if (ip && !vistos.has(ip)) { vistos.add(ip); lista.push(ip); } };
+  const add = (ip) => {
+    if (ip && rede.ehIPv4(ip) && !vistos.has(ip)) { vistos.add(ip); lista.push(ip); }
+  };
 
-  const redes = [];
-  const ifaces = os.networkInterfaces();
-  for (const nome of Object.keys(ifaces)) {
-    for (const info of ifaces[nome] || []) {
-      if (info.family !== 'IPv4' && info.family !== 4) continue;
-      if (info.internal) continue;
-      const partes = info.address.split('.');
-      if (partes.length !== 4) continue;
-      redes.push({ base: partes.slice(0, 3).join('.'), meu: info.address });
-    }
-  }
+  const p = rede.pistas();
+  diag('interfaces pelo Node: ' + (p.node.length ? p.node.join(', ') : 'nenhuma'));
+  diag('interfaces por ip/ifconfig: ' + (p.comandos.length ? p.comandos.join(', ') : 'nenhuma'));
+  diag('gateway por /proc/net/route: ' + (p.gateways.length ? p.gateways.join(', ') : 'nenhum'));
+  const doNode = p.node;
+  const doCmd = p.comandos;
+  const daRota = p.gateways;
 
-  // Este proprio aparelho pode ser o servidor (alguem rodando o
-  // "Conectar Tp" na maquina que serve). Custa nada e evita falso negativo.
+  const meus = doNode.concat(doCmd).filter((ip) => ip !== '127.0.0.1');
+  const bases = [];
+  const addBase = (b) => { if (b && bases.indexOf(b) === -1) bases.push(b); };
+
+  // Este aparelho tambem pode ser o servidor.
   add('127.0.0.1');
-  for (const r of redes) add(r.meu);
+  meus.forEach(add);
 
-  // Depois o gateway: costuma ser o aparelho que criou o hotspot.
-  for (const r of redes) add(r.base + '.1');
-  ['192.168.43.1', '192.168.49.1', '192.168.1.1', '192.168.0.1'].forEach(add);
+  // O gateway primeiro: no hotspot, e o aparelho do servidor.
+  daRota.forEach((ip) => { add(ip); addBase(base24(ip)); });
 
-  // Por fim, a sub-rede inteira de cada interface.
-  for (const r of redes) {
-    for (let i = 1; i <= 254; i++) add(r.base + '.' + i);
-  }
+  meus.forEach((ip) => addBase(base24(ip)));
+  ['192.168.43', '192.168.49', '192.168.1', '192.168.0'].forEach(addBase);
+
+  bases.forEach((b) => add(b + '.1'));
+  bases.forEach((b) => { for (let i = 1; i <= 254; i++) add(b + '.' + i); });
+
+  diag('redes a varrer: ' + (bases.length ? bases.map((b) => b + '.x').join(', ') : 'nenhuma'));
+  diag('total de enderecos a testar: ' + lista.length);
   return lista;
 }
 
+// ---------- testes ----------
 function portaAberta(host) {
   return new Promise((ok) => {
     const s = net.connect({ host, port: PORTA });
@@ -66,7 +77,7 @@ function portaAberta(host) {
   });
 }
 
-// Porta aberta nao basta: confirma que a resposta e o app.
+// Porta aberta nao basta: confirma que quem respondeu e o app.
 function ehPrompter(host) {
   return new Promise((ok) => {
     const req = http.get({ host, port: PORTA, path: '/', timeout: TIMEOUT_HTTP }, (res) => {
@@ -85,22 +96,34 @@ function ehPrompter(host) {
 
 async function principal() {
   const lista = alvos();
+  if (!lista.length) {
+    diag('nenhum endereco para testar - nao consegui enxergar a rede.');
+    process.exit(1);
+  }
+
+  const abertosSemApp = [];
   for (let i = 0; i < lista.length; i += PARALELO) {
     const lote = lista.slice(i, i + PARALELO);
     const abertos = [];
     await Promise.all(lote.map(async (ip) => {
       if (await portaAberta(ip)) abertos.push(ip);
     }));
-    // Testa os que responderam, na ordem original do lote.
     for (const ip of lote) {
       if (abertos.indexOf(ip) === -1) continue;
       if (await ehPrompter(ip)) {
         console.log('http://' + ip + ':' + PORTA);
         process.exit(0);
       }
+      abertosSemApp.push(ip);
     }
+  }
+
+  if (abertosSemApp.length) {
+    diag('porta ' + PORTA + ' aberta, mas nao era o Prompter, em: ' + abertosSemApp.join(', '));
+  } else {
+    diag('nenhum aparelho respondeu na porta ' + PORTA + '.');
   }
   process.exit(1);
 }
 
-principal().catch(() => process.exit(1));
+principal().catch((e) => { diag('erro: ' + (e && e.message)); process.exit(1); });

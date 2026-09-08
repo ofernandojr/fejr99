@@ -16,7 +16,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const rede = require('./scripts/rede.js');
 
 const PORT = process.env.PORT || 8080;
 const ROOT = __dirname;
@@ -54,14 +54,7 @@ const server = http.createServer((req, res) => {
   // aberto por "localhost", e daqui que ele tira o endereco de verdade
   // para montar o QR que o outro aparelho vai ler.
   if (url.pathname === '/ips') {
-    const ips = [];
-    const ifaces = os.networkInterfaces();
-    Object.keys(ifaces).forEach((nome) => {
-      (ifaces[nome] || []).forEach((info) => {
-        const v4 = info.family === 'IPv4' || info.family === 4;
-        if (v4 && !info.internal) ips.push(info.address);
-      });
-    });
+    const ips = rede.meusEnderecos();
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({ ips: ips, porta: PORT }));
   }
