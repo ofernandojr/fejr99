@@ -428,7 +428,7 @@
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
       <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
-      <label class="chk hidden" id="linhaMouse"><input type="checkbox" id="chkMouse"> Corrigir o mouse <small>(inverte os dois eixos, para o aparelho girado no suporte)</small></label>
+      <label class="chk hidden" id="linhaMouse"><input type="checkbox" id="chkMouse"> Corrigir o mouse <small>(inverte esquerda/direita, para a tela espelhada no suporte)</small></label>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
@@ -951,7 +951,7 @@
 
       touchEl.addEventListener('wheel', (e) => {
         e.preventDefault();
-        rolarPara(scrollState.offset + e.deltaY * (mouseGiradoAtivo() ? -1 : 1));
+        rolarPara(scrollState.offset + e.deltaY);
       }, { passive: false });
     })();
 
@@ -1037,8 +1037,11 @@
       // borda da tela e parava de gerar movimento - o ponteiro "andava
       // pouco" e travava. Espelhando, o movimento e 1:1, a tela inteira e
       // alcancavel e nenhum erro se acumula.
-      ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, window.innerWidth  - e.clientX));
-      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, window.innerHeight - e.clientY));
+      //
+      // So o HORIZONTAL e espelhado: o suporte inverte esquerda/direita, nao
+      // cima/baixo. Inverter o vertical junto deixava a rolagem ao contrario.
+      ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, window.innerWidth - e.clientX));
+      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, e.clientY));
       desenharPonteiro();
       if (arrBaixo) {
         const d = arrY - ponteiro.y;

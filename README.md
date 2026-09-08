@@ -53,9 +53,10 @@ um bloco.
 
 ### Mouse andando ao contrário
 
-Em suporte de teleprompter o aparelho fica girado e o cursor anda invertido: a
-mão vai para um lado e ele vai para o outro. Marque **Corrigir o mouse** no
-Passo 3 — ele inverte os dois eixos, esquerda/direita e cima/baixo.
+No suporte de teleprompter a tela fica espelhada e o cursor anda ao contrário
+na horizontal: a mão vai para a direita e ele vai para a esquerda. Marque
+**Corrigir o mouse** no Passo 3 — ele espelha **só esquerda/direita**. Cima e
+baixo continuam naturais, senão a rolagem sairia invertida.
 
 Dentro do prompter, o cursor do sistema é escondido e o app desenha o próprio
 ponteiro (uma cruz branca), que anda no sentido certo. O clique vale para o
