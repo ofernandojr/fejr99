@@ -87,14 +87,14 @@ Instale o **Termux** (recomendado pela F-Droid), abra e cole os comandos abaixo
 **1. Instalar os programas**
 
 ```sh
-pkg update && pkg install nodejs git qrencode
+pkg update && pkg install nodejs git
 ```
 
 Quando perguntar `Continue? [Y/n]`, responda `y` e Enter. Se responder que já
 estão na versão mais nova, está certo — pode seguir.
 
-> O `qrencode` desenha o QR Code de conexão na tela do Termux. Sem ele o
-> servidor sobe igual, só não mostra o QR.
+> Só esses dois. O `qrencode`, que desenha o QR Code de conexão, é instalado
+> sozinho no passo 3 — não precisa digitar o nome dele.
 
 **2. Baixar o projeto**
 
@@ -149,7 +149,7 @@ aparelho liga.
 | `destination path 'tptvweb' already exists` | Já está baixado. Use `cd $HOME/tptvweb && git pull`. |
 | `No command run found` | Você digitou a frase `Run 'apt list --upgradable'`, que é só um aviso do Termux, não um comando. Ignore. |
 | `22 packages can be upgraded` | Só um aviso. Não precisa fazer nada. |
-| Não aparece QR ao iniciar o servidor | Falta o `qrencode`: rode `pkg install qrencode`. |
+| Não aparece QR ao iniciar o servidor | Falta o `qrencode`. Rode de novo `sh scripts/instalar-atalhos.sh`, ou instale à mão: `pkg install qrencode` (com **q**, de QR). |
 | `Authentication failed` no `git clone` | O repositório precisa estar público. Confira em <https://github.com/ofernandojr/tptvweb>. |
 
 ### Usar no dia a dia
