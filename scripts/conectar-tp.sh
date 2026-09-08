@@ -13,9 +13,22 @@ echo "=============================================="
 echo ""
 echo "[..] Procurando o servidor na rede..."
 
+# Testa se uma porta responde. Usa o proprio Node (que ja e obrigatorio
+# para o servidor) em vez do "nc": um pacote a menos para instalar, e sem
+# o risco de a deteccao falhar em silencio quando o netcat nao existe.
+porta_aberta() {  # $1=host  $2=porta
+  node -e '
+    const s = require("net").connect({ host: process.argv[1], port: +process.argv[2] });
+    s.setTimeout(1000);
+    s.on("connect", () => { s.destroy(); process.exit(0); });
+    s.on("timeout", () => { s.destroy(); process.exit(1); });
+    s.on("error",   () => process.exit(1));
+  ' "$1" "$2" 2>/dev/null
+}
+
 URL_ENCONTRADO=""
 for ip in $CANDIDATOS; do
-  if (echo "" | nc -w1 "$ip" "$PORTA") 2>/dev/null; then
+  if porta_aberta "$ip" "$PORTA"; then
     URL_ENCONTRADO="http://$ip:$PORTA"
     break
   fi

@@ -87,15 +87,12 @@ Instale o **Termux** (recomendado pela F-Droid), abra e cole os comandos abaixo
 **1. Instalar os programas**
 
 ```sh
-pkg update && pkg install nodejs git netcat-openbsd qrencode
+pkg update && pkg install nodejs git qrencode
 ```
 
 Quando perguntar `Continue? [Y/n]`, responda `y` e Enter. Se responder que já
 estão na versão mais nova, está certo — pode seguir.
 
-> O `netcat-openbsd` fornece o comando `nc`, usado pelos atalhos para achar o
-> servidor. Cuidado com a digitação: é `netcat-open**b**sd`.
->
 > O `qrencode` desenha o QR Code de conexão na tela do Termux. Sem ele o
 > servidor sobe igual, só não mostra o QR.
 
@@ -148,7 +145,6 @@ aparelho liga.
 
 | O que apareceu | O que fazer |
 | --- | --- |
-| `Unable to locate package netcat-opensd` | Faltou o **b**: é `netcat-openbsd`. |
 | `bash: cd: OLDPWD not set` | Seu teclado trocou `~` por `-`. Use `$HOME`. |
 | `destination path 'tptvweb' already exists` | Já está baixado. Use `cd $HOME/tptvweb && git pull`. |
 | `No command run found` | Você digitou a frase `Run 'apt list --upgradable'`, que é só um aviso do Termux, não um comando. Ignore. |
@@ -175,6 +171,10 @@ Resumo do que ela pede:
 
 **Deixe a janela do Termux aberta** — fechar derruba o servidor. Voltar para a
 tela inicial é normal, ele continua rodando por trás.
+
+Tocar em **Iniciar Servidor** de novo, com o servidor já rodando, **não
+reinicia nada**: ele só reabre o app no navegador, mostra o endereço e o QR, e
+fecha a janela. O servidor em execução não é tocado.
 
 Daí em diante, o que você mudar num aparelho aparece no outro na hora: texto,
 tamanho da letra, velocidade, rolagem, play/pause e tela preta.
