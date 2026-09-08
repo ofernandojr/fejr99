@@ -96,6 +96,22 @@ if [ -n "$IPS" ]; then
   echo ""
   echo "    Atalho: no outro aparelho da para usar o"
   echo "    widget 'Conectar Tp', que procura sozinho."
+
+  # QR do primeiro endereco: a camera do outro aparelho le e abre direto.
+  IP1=$(echo "$IPS" | head -n 1)
+  URL1="http://$IP1:$PORTA"
+  if command -v qrencode >/dev/null 2>&1; then
+    echo ""
+    echo "    Ou aponte a camera do outro aparelho"
+    echo "    para o codigo abaixo:"
+    echo ""
+    qrencode -t ANSIUTF8 -m 2 "$URL1"
+    echo "    $URL1"
+  else
+    echo ""
+    echo "    Para aparecer um QR Code aqui, instale"
+    echo "    uma vez:   pkg install qrencode"
+  fi
 else
   echo "    NENHUMA REDE DETECTADA."
   echo ""

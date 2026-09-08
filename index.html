@@ -80,6 +80,12 @@
 
     .dica { font-size: 12.5px; color: #999; line-height: 1.5; margin: 8px 0 0; }
 
+    /* ── QR de conexão ── */
+    #qrAcesso { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0 0; }
+    #qrAcesso.show { display: flex; }
+    #qrAcessoImg { max-width: min(80vw, 300px); height: auto; image-rendering: pixelated; background: #fff; border-radius: 8px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    #qrAcessoUrl { font-size: 13px; color: #1877F2; font-weight: 700; word-break: break-all; text-align: center; }
+
     /* ── Card genérico ── */
     .card {
       background: #fff; border-radius: var(--radius);
@@ -137,6 +143,11 @@
       font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
     }
     .ajustes .passo:active { background: #d0d2d6; }
+    .ajustes select {
+      flex: 1; min-width: 0; min-height: 42px; padding: 0 10px;
+      border: 1.5px solid #dde; border-radius: 10px;
+      font-size: 14px; background: #f9f9f9; color: #1C1E21;
+    }
 
     /* ── Botão iniciar ── */
     .btn-iniciar {
@@ -397,7 +408,14 @@
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
       <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
-      <label class="chk hidden" id="labelMouseGirado"><input type="checkbox" id="chkMouseGirado"> Corrigir o mouse <small>(marque se o aparelho fica girado 180° no suporte)</small></label>
+      <div class="linha hidden" id="linhaMouse">
+        <span class="nome">Mouse</span>
+        <select id="selMouse">
+          <option value="off">Normal</option>
+          <option value="x">Corrigir esquerda/direita (espelho)</option>
+          <option value="xy">Corrigir os dois eixos (girado 180°)</option>
+        </select>
+      </div>
     </div>
 
     <button class="btn-iniciar" id="btnIniciar">INICIAR TELEPROMPTER</button>
@@ -413,6 +431,19 @@
         escrito lá.</p>
         <p class="dica">Quem abre o app pelo endereço do servidor já entra
         sincronizado: não há nada para configurar aqui.</p>
+      </div>
+    </div>
+
+    <div class="ajuda" id="caixaQr">
+      <div class="ajuda-corpo" style="padding: 16px;">
+        <p><b>Conectar outro aparelho pelo QR</b></p>
+        <p class="dica">O outro aparelho aponta a câmera para o código e abre o
+        app já conectado, sem digitar endereço nenhum.</p>
+        <div id="qrAcesso">
+          <canvas id="qrAcessoImg"></canvas>
+          <div id="qrAcessoUrl"></div>
+        </div>
+        <p class="dica" id="qrAviso"></p>
       </div>
     </div>
 
@@ -466,6 +497,9 @@
     <div id="ponteiroVirtual" class="hidden"></div>
 
   </div>
+
+  <!-- ===== BIBLIOTECA LOCAL (gerador de QR) ===== -->
+  <script src="libs/qrcode.min.js"></script>
 
   <!-- ===== CUSTOM MODAL ===== -->
   <div id="customModal" class="hidden">
@@ -885,7 +919,7 @@
 
       touchEl.addEventListener('wheel', (e) => {
         e.preventDefault();
-        rolarPara(scrollState.offset + e.deltaY * (mouseGiradoAtivo() ? -1 : 1));
+        rolarPara(scrollState.offset + e.deltaY * (modoMouse === 'xy' ? -1 : 1));
       }, { passive: false });
     })();
 
@@ -903,15 +937,17 @@
        trava nas bordas da tela. Sem ele, funciona igual, mas o
        ponteiro pode empacar quando o cursor real chega na borda.
     */
-    let mouseGirado = localStorage.getItem('tvweb_mouseGirado') === '1';
+    // 'off' = mouse normal | 'x' = so esquerda/direita (tela espelhada)
+    // 'xy' = os dois eixos (aparelho girado 180 graus no suporte)
+    let modoMouse = localStorage.getItem('tvweb_modoMouse') || 'off';
     const ponteiro = { x: 0, y: 0 };
-    let ponteiroLigado = false, reenviandoClique = false;
+    let ponteiroLigado = false, reenviandoClique = false, engolirClique = false;
 
     function temMouse() {
       return !!(window.matchMedia && window.matchMedia('(any-pointer: fine)').matches);
     }
     function mouseGiradoAtivo() {
-      return mouseGirado && !prompterEl.classList.contains('hidden');
+      return modoMouse !== 'off' && !prompterEl.classList.contains('hidden');
     }
 
     function desenharPonteiro() {
@@ -950,8 +986,11 @@
     document.addEventListener('mousemove', (e) => {
       if (!ponteiroLigado) return;
       const dx = e.movementX || 0, dy = e.movementY || 0;
+      // Tela espelhada inverte so o horizontal. So o aparelho girado 180 graus
+      // inverte tambem o vertical - inverter sempre deixava o cima/baixo errado.
+      const sinalY = (modoMouse === 'xy') ? -1 : 1;
       ponteiro.x = Math.min(window.innerWidth - 1,  Math.max(0, ponteiro.x - dx));
-      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y - dy));
+      ponteiro.y = Math.min(window.innerHeight - 1, Math.max(0, ponteiro.y + dy * sinalY));
       desenharPonteiro();
       if (arrBaixo) {
         const d = arrY - ponteiro.y;
@@ -972,36 +1011,49 @@
       e.preventDefault(); e.stopPropagation();
       if (!arrBaixo) return;
       arrBaixo = false;
+      engolirClique = true;
+      setTimeout(() => { engolirClique = false; }, 300); // nao trava cliques futuros
       if (arrArrastou) { pushLive(true); return; }
 
       // Clique: vale o que esta embaixo do ponteiro desenhado, nao do cursor real.
       const alvo = document.elementFromPoint(ponteiro.x, ponteiro.y);
       const botao = alvo && alvo.closest ? alvo.closest('button') : null;
-      if (botao) {
-        reenviandoClique = true;
-        botao.click();
-        reenviandoClique = false;
-      } else if (Date.now() - arrT0 < 400) {
-        togglePlay(); // clique na area livre = play/pausa
-      }
+      const rapido = Date.now() - arrT0 < 400;
+
+      // Adiado de proposito. O navegador ainda vai disparar o clique real logo
+      // apos este mouseup; ele precisa ser engolido ANTES da acao rodar. Agindo
+      // aqui dentro, um botao como o VOLTAR desligava o ponteiro no meio do
+      // caminho, o clique real passava batido e caia no editor - em cima do
+      // INICIAR TELEPROMPTER, que reabria o prompter na hora.
+      setTimeout(() => {
+        if (botao) {
+          reenviandoClique = true;
+          try { botao.click(); } finally { reenviandoClique = false; }
+        } else if (rapido) {
+          togglePlay(); // clique na area livre = play/pausa
+        }
+      }, 0);
     }, true);
 
     // Engole o clique original (ele cairia na posicao do cursor real). So vale
     // para clique de verdade: clique vindo do teclado ou do proprio codigo
     // (isTrusted false) tem de passar, senao botoes como o VOLTAR travam.
     document.addEventListener('click', (e) => {
-      if (ponteiroLigado && !reenviandoClique && e.isTrusted) {
+      if (!e.isTrusted || reenviandoClique) return; // clique do proprio codigo passa
+      if (ponteiroLigado || engolirClique) {
         e.preventDefault(); e.stopPropagation();
+        engolirClique = false;
       }
     }, true);
 
     /* ===== OPCAO NOS AJUSTES (so aparece se houver mouse) ===== */
-    (function opcaoMouseGirado() {
-      $('#labelMouseGirado').classList.toggle('hidden', !temMouse());
-      $('#chkMouseGirado').checked = mouseGirado;
-      $('#chkMouseGirado').addEventListener('change', () => {
-        mouseGirado = $('#chkMouseGirado').checked;
-        localStorage.setItem('tvweb_mouseGirado', mouseGirado ? '1' : '0');
+    (function opcaoMouse() {
+      $('#linhaMouse').classList.toggle('hidden', !temMouse());
+      $('#selMouse').value = modoMouse;
+      $('#selMouse').addEventListener('change', () => {
+        modoMouse = $('#selMouse').value;
+        localStorage.setItem('tvweb_modoMouse', modoMouse);
+        desligarPonteiro();
         sincronizarPonteiro();
       });
     })();
@@ -1080,6 +1132,57 @@
       URL.revokeObjectURL(a.href);
     }
     $('#btnSalvar').addEventListener('click', salvarPauta);
+
+    /* ===== QR DE CONEXAO =====
+       Mostra o endereco pelo qual ESTE aparelho foi aberto. So faz sentido
+       quando o app veio do servidor (http://ip:porta); aberto de outro jeito,
+       o endereco nao serve para o outro aparelho. */
+    function desenharQrConexao() {
+      const caixa = $('#qrAcesso');
+      const aviso = $('#qrAviso');
+      const ehLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+      if (location.protocol !== 'http:' || !location.hostname) {
+        caixa.classList.remove('show');
+        aviso.textContent = 'Abra o app pelo endereço do servidor para o QR aparecer.';
+        return;
+      }
+      if (ehLocal) {
+        caixa.classList.remove('show');
+        aviso.textContent = 'Você abriu por "localhost", que só vale neste aparelho. ' +
+          'Abra pelo endereço de rede que o Termux mostrou (ex.: http://192.168.43.1:8080) ' +
+          'para o QR aparecer aqui. O Termux também mostra um QR ao iniciar o servidor.';
+        return;
+      }
+
+      const url = location.origin + '/';
+      try {
+        const qr = qrcode(0, 'M');
+        qr.addData(url);
+        qr.make();
+        const modulos = qr.getModuleCount();
+        const canvas = $('#qrAcessoImg');
+        const celula = Math.max(3, Math.floor(Math.min(window.innerWidth * 0.7, 300) / modulos));
+        canvas.width = modulos * celula;
+        canvas.height = modulos * celula;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000000';
+        for (let l = 0; l < modulos; l++) {
+          for (let c = 0; c < modulos; c++) {
+            if (qr.isDark(l, c)) ctx.fillRect(c * celula, l * celula, celula, celula);
+          }
+        }
+        $('#qrAcessoUrl').textContent = url;
+        caixa.classList.add('show');
+        aviso.textContent = '';
+      } catch (e) {
+        caixa.classList.remove('show');
+        aviso.textContent = 'Não consegui gerar o QR. Digite o endereço à mão: ' + url;
+      }
+    }
+    desenharQrConexao();
 
     /* ----- Importar texto: TXT (qualquer codificacao) e Word .docx -----
        O .docx e um ZIP. O navegador ja sabe descompactar (DecompressionStream),

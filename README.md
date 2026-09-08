@@ -48,16 +48,23 @@ um bloco.
 > **Espelhar texto** já vem ligado. Isso é para quem usa um vidro/espelho na
 > frente da câmera. Se você lê direto da tela, desligue no Passo 3.
 
-### Mouse com o aparelho girado 180°
+### Mouse andando ao contrário
 
-Em suporte de teleprompter o aparelho costuma ficar de cabeça para baixo. Aí o
-cursor anda ao contrário: a mão vai para a direita e ele vai para a esquerda.
+Em suporte de teleprompter o cursor costuma andar invertido. No Passo 3 há a
+opção **Mouse**, com três escolhas:
 
-Marque **Corrigir o mouse** no Passo 3. Dentro do prompter, o cursor do sistema
-é escondido e o app passa a desenhar o próprio ponteiro (uma cruz branca), que
-anda no sentido certo. O clique vale para o botão que está sob essa cruz.
+| Escolha | Quando usar |
+| --- | --- |
+| **Normal** | O mouse já anda certo. |
+| **Corrigir esquerda/direita (espelho)** | Só o horizontal está invertido — caso do vidro/espelho na frente da câmera. |
+| **Corrigir os dois eixos (girado 180°)** | O aparelho está de cabeça para baixo no suporte, e tanto o horizontal quanto o vertical estão invertidos. |
 
-Só vale dentro do prompter — na tela de edição o mouse continua como sempre.
+Escolha a errada e um dos eixos fica invertido: se cima/baixo ficou ao
+contrário, você está em *girado 180°* e o certo é *espelho* (ou o contrário).
+
+Dentro do prompter, o cursor do sistema é escondido e o app desenha o próprio
+ponteiro (uma cruz branca), que anda no sentido certo. O clique vale para o
+botão sob essa cruz. Fora do prompter o mouse continua como sempre.
 
 > O navegador não consegue inverter o cursor do sistema; por isso o app desenha
 > um ponteiro próprio em vez de tentar mexer no do Android.
@@ -80,14 +87,17 @@ Instale o **Termux** (recomendado pela F-Droid), abra e cole os comandos abaixo
 **1. Instalar os programas**
 
 ```sh
-pkg update && pkg install nodejs git netcat-openbsd
+pkg update && pkg install nodejs git netcat-openbsd qrencode
 ```
 
 Quando perguntar `Continue? [Y/n]`, responda `y` e Enter. Se responder que já
 estão na versão mais nova, está certo — pode seguir.
 
-> O `netcat-openbsd` é o que fornece o comando `nc`, usado pelos atalhos para
-> achar o servidor. Cuidado com a digitação: é `netcat-open**b**sd`.
+> O `netcat-openbsd` fornece o comando `nc`, usado pelos atalhos para achar o
+> servidor. Cuidado com a digitação: é `netcat-open**b**sd`.
+>
+> O `qrencode` desenha o QR Code de conexão na tela do Termux. Sem ele o
+> servidor sobe igual, só não mostra o QR.
 
 **2. Baixar o projeto**
 
@@ -143,6 +153,7 @@ aparelho liga.
 | `destination path 'tptvweb' already exists` | Já está baixado. Use `cd $HOME/tptvweb && git pull`. |
 | `No command run found` | Você digitou a frase `Run 'apt list --upgradable'`, que é só um aviso do Termux, não um comando. Ignore. |
 | `22 packages can be upgraded` | Só um aviso. Não precisa fazer nada. |
+| Não aparece QR ao iniciar o servidor | Falta o `qrencode`: rode `pkg install qrencode`. |
 | `Authentication failed` no `git clone` | O repositório precisa estar público. Confira em <https://github.com/ofernandojr/tptvweb>. |
 
 ### Usar no dia a dia
@@ -157,7 +168,9 @@ Resumo do que ela pede:
 2. Conectar o outro aparelho nesse hotspot (ou pôr os dois na mesma Wi-Fi).
 3. Abrir `http://localhost:8080` no aparelho do servidor.
 4. Abrir o endereço que o Termux mostrou (tipo `http://192.168.43.1:8080`) no
-   outro aparelho — ou usar nele o atalho **Conectar Tp**, que procura sozinho.
+   outro aparelho. Há três jeitos, do mais fácil ao mais manual:
+   **apontar a câmera para o QR Code que o Termux desenha na tela**, usar o
+   atalho **Conectar Tp** (procura o servidor sozinho), ou digitar o endereço.
 5. Conferir se aparece **✔ Conectado ao servidor** no topo do app.
 
 **Deixe a janela do Termux aberta** — fechar derruba o servidor. Voltar para a
@@ -171,6 +184,19 @@ tamanho da letra, velocidade, rolagem, play/pause e tela preta.
 
 > Para deixar o app com cara de aplicativo, use "Adicionar à tela inicial" no
 > menu do navegador, nos dois aparelhos.
+
+### Conectar pelo QR Code
+
+Aparece em dois lugares, os dois com o mesmo endereço:
+
+- **Na tela do Termux**, logo depois de tocar em **Iniciar Servidor**. É o mais
+  prático: o outro aparelho aponta a câmera e abre o app já conectado.
+- **Dentro do app**, no Passo 4, para repassar a conexão a um terceiro aparelho
+  sem voltar ao Termux.
+
+> O QR dentro do app só aparece quando você abriu o app **pelo endereço de rede**
+> (`http://192.168.43.1:8080`). Se abriu por `localhost`, o app avisa — aquele
+> endereço só vale no próprio aparelho e não serviria para ninguém.
 
 ### Comandar do outro aparelho
 

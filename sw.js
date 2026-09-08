@@ -2,11 +2,12 @@
    Com o servidor local (server.js no Termux) o app já roda sem
    internet; o cache serve para abrir rápido e sobreviver a quedas
    momentâneas do servidor. */
-const CACHE = 'tvweb-prompter-v5';
+const CACHE = 'tvweb-prompter-v6';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './libs/qrcode.min.js'
 ];
 
 self.addEventListener('install', (e) => {
