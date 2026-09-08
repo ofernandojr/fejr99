@@ -26,6 +26,9 @@ Na tela do prompter:
 | Botões **&#124;◀** e **▶&#124;** | Pulam para o bloco anterior / seguinte |
 | Botão **⟵ VOLTAR** | Sai do prompter |
 
+No **Passo 2** cada bloco aparece numerado e com o texto inteiro. Toque no
+texto para abrir ou fechar o bloco todo, e no ✎ para editar numa caixa grande.
+
 O texto fica salvo sozinho no aparelho. Fechar o app não apaga nada.
 
 ### Trazer o texto de um arquivo

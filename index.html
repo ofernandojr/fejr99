@@ -97,11 +97,26 @@
     /* ── Lista de pauta ── */
     #listaPauta { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
     #listaPauta li {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: flex-start; gap: 6px;
       background: #fff; border-radius: var(--radius);
       box-shadow: var(--card-shadow); padding: 11px 12px;
     }
-    #listaPauta li .texto { flex: 1; font-size: 14px; word-break: break-word; line-height: 1.4; }
+    #listaPauta li .texto {
+      flex: 1; min-width: 0; font-size: 15px; line-height: 1.45;
+      word-break: break-word; white-space: pre-wrap; cursor: pointer;
+      /* Mostra varias linhas em vez de cortar em 60 caracteres. */
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6;
+      overflow: hidden;
+    }
+    #listaPauta li .texto.aberto { -webkit-line-clamp: unset; overflow: visible; }
+    #listaPauta li .n {
+      flex-shrink: 0; min-width: 22px; height: 22px; margin-top: 1px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #eef3ff; color: #1877F2; border-radius: 6px;
+      font-size: 12px; font-weight: 800;
+    }
+    #listaPauta li .acoes { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    #listaPauta li .acoes .linha-btn { display: flex; gap: 4px; }
     #listaPauta li button { min-width: 40px; min-height: 40px; border: none; border-radius: 9px; font-size: 15px; cursor: pointer; color: #fff; font-weight: bold; }
     #listaPauta li .b-up, #listaPauta li .b-down { background: #aaa; }
     #listaPauta li .b-edit { background: #1877F2; }
@@ -298,9 +313,14 @@
 
     /* ── Modal ── */
     #customModal { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .modal-content { background: #fff; padding: 24px 20px; border-radius: 18px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+    .modal-content { background: #fff; padding: 24px 20px; border-radius: 18px; width: 100%; max-width: 560px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
     .modal-content p { font-size: 17px; margin: 0 0 16px; font-weight: 700; line-height: 1.4; }
-    .modal-content input { width: 100%; padding: 12px; margin-bottom: 14px; border: 1.5px solid #dde; border-radius: 10px; font-size: 16px; font-family: inherit; }
+    .modal-content textarea {
+      width: 100%; min-height: 190px; padding: 12px; margin-bottom: 14px;
+      border: 1.5px solid #dde; border-radius: 10px; font-size: 16px;
+      font-family: inherit; line-height: 1.5; resize: vertical; text-align: left;
+    }
+    .modal-content textarea:focus { outline: none; border-color: #1877F2; }
     .modal-content .modal-btns { display: flex; gap: 10px; }
     .modal-content button { padding: 13px; border: none; border-radius: 11px; font-size: 16px; font-weight: 700; cursor: pointer; flex: 1; }
     #modalBtnOk     { background: #1877F2; color: #fff; }
@@ -498,7 +518,7 @@
   <div id="customModal" class="hidden">
     <div class="modal-content">
       <p id="modalMsg"></p>
-      <input type="text" id="modalInput" class="hidden">
+      <textarea id="modalInput" class="hidden" rows="8"></textarea>
       <div class="modal-btns">
         <button id="modalBtnCancel" class="hidden">Cancelar</button>
         <button id="modalBtnOk">OK</button>
@@ -570,20 +590,39 @@
       $('#dicaVazia').classList.toggle('hidden', Pauta.length > 0);
       Pauta.forEach((texto, i) => {
         const li = document.createElement('li');
-        const preview = texto.length > 60 ? texto.slice(0, 60) + '…' : texto;
+
+        const num = document.createElement('span');
+        num.className = 'n';
+        num.textContent = String(i + 1);
+        li.appendChild(num);
+
+        // Texto inteiro, limitado a algumas linhas pelo CSS. Antes era
+        // cortado em 60 caracteres, o que escondia quase todo o bloco.
         const span = document.createElement('span');
         span.className = 'texto';
-        span.textContent = preview;
+        span.textContent = texto;
+        span.title = 'Toque para abrir ou fechar o texto todo';
+        span.onclick = () => span.classList.toggle('aberto');
         li.appendChild(span);
 
         const mk = (cls, label, fn) => {
           const b = document.createElement('button');
           b.className = cls; b.textContent = label; b.onclick = fn; return b;
         };
-        li.appendChild(mk('b-up', '▲', () => moverBloco(i, -1)));
-        li.appendChild(mk('b-down', '▼', () => moverBloco(i, 1)));
-        li.appendChild(mk('b-edit', '✎', () => editarBloco(i)));
-        li.appendChild(mk('b-del', '✕', () => { Pauta.splice(i, 1); renderLista(); pushPauta(); }));
+        const acoes = document.createElement('div');
+        acoes.className = 'acoes';
+        const cima = document.createElement('div');
+        cima.className = 'linha-btn';
+        cima.appendChild(mk('b-up', '▲', () => moverBloco(i, -1)));
+        cima.appendChild(mk('b-down', '▼', () => moverBloco(i, 1)));
+        const baixo = document.createElement('div');
+        baixo.className = 'linha-btn';
+        baixo.appendChild(mk('b-edit', '✎', () => editarBloco(i)));
+        baixo.appendChild(mk('b-del', '✕', () => { Pauta.splice(i, 1); renderLista(); pushPauta(); }));
+        acoes.appendChild(cima);
+        acoes.appendChild(baixo);
+        li.appendChild(acoes);
+
         ul.appendChild(li);
       });
     }
