@@ -171,7 +171,12 @@ escrito ali.
 
 Resumo do que ela pede:
 
-1. Ligar o **hotspot** do aparelho que roda o servidor.
+1. Ligar o **hotspot** do aparelho que roda o servidor. Se ele estiver
+   desligado, o script abre a tela do hotspot sozinho — basta virar a chave.
+
+   > Ligar o hotspot **por comando** não é possível: o Android reserva essa API
+   > a apps do sistema desde a versão 8, e só com root daria. O script abre a
+   > tela certa, mas quem liga é você.
 2. Conectar o outro aparelho nesse hotspot (ou pôr os dois na mesma Wi-Fi).
 3. Abrir `http://localhost:8080` no aparelho do servidor.
 4. Abrir o endereço que o Termux mostrou (tipo `http://192.168.43.1:8080`) no

@@ -30,6 +30,35 @@ abrir_app() {
   am start -a android.intent.action.VIEW -d "$LOCAL" >/dev/null 2>&1 || true
 }
 
+# LIGAR o hotspot por comando nao e possivel sem root: o Android restringe
+# essa API a apps de sistema desde a versao 8. O que da para fazer e abrir a
+# tela certa, para o usuario so virar a chave. O nome da tela muda conforme o
+# fabricante, entao tenta varios ate um funcionar.
+abrir_tela_hotspot() {
+  # Sem o "am" (fora do Android) nao ha o que tentar. Sem esta guarda, o
+  # comando falharia, o grep nao acharia "error" e a funcao diria que deu certo.
+  command -v am >/dev/null 2>&1 || return 1
+
+  tentar_intent() {
+    saida=$("$@" 2>&1)
+    [ $? -eq 0 ] || return 1
+    echo "$saida" | grep -qi 'error' && return 1
+    return 0
+  }
+
+  for alvo in \
+    'com.android.settings/.TetherSettings' \
+    'com.android.settings/.Settings$TetherSettingsActivity' \
+    'com.android.settings/.wifi.tether.WifiTetherSettings'
+  do
+    tentar_intent am start -n "$alvo" && return 0
+  done
+
+  # Ultimo recurso: a tela geral de redes.
+  tentar_intent am start -a android.settings.WIRELESS_SETTINGS && return 0
+  return 1
+}
+
 # Descobre os IPs deste aparelho (o outro aparelho usa um deles)
 descobrir_ips() {
   IPS=$(ip -4 addr 2>/dev/null \
@@ -134,10 +163,13 @@ echo "=============================================="
 echo ""
 echo "  PASSO 1 - Ligue o hotspot DESTE aparelho"
 echo "  ----------------------------------------"
-echo "    Configuracoes > Ponto de acesso (hotspot)"
+echo "    Configuracoes > Conexoes > Roteador Wi-Fi"
 echo "    Nao precisa de internet: o hotspot serve"
 echo "    so para os dois se enxergarem."
 echo "    (Ou coloque os dois na mesma Wi-Fi.)"
+echo ""
+echo "    Se nenhuma rede for detectada abaixo, eu"
+echo "    abro essa tela para voce."
 echo ""
 echo "  PASSO 2 - Conecte o OUTRO aparelho"
 echo "  ----------------------------------------"
@@ -169,9 +201,23 @@ if [ -n "$IPS" ]; then
 else
   echo "    NENHUMA REDE DETECTADA."
   echo ""
-  echo "    Ligue o hotspot (Passo 1) e toque em"
-  echo "    'Iniciar Servidor' de novo para o"
-  echo "    endereco aparecer aqui."
+  echo "    O hotspot deste aparelho parece estar"
+  echo "    desligado."
+  echo ""
+  if abrir_tela_hotspot; then
+    echo "    Abri a tela do hotspot para voce."
+    echo "    Ligue a chave la e volte aqui."
+  else
+    echo "    Abra: Configuracoes > Conexoes >"
+    echo "    Roteador Wi-Fi (ou Ponto de acesso)."
+  fi
+  echo ""
+  echo "    Depois toque em 'Iniciar Servidor' de"
+  echo "    novo para o endereco aparecer aqui."
+  echo ""
+  echo "    (Ligar o hotspot sozinho nao e possivel:"
+  echo "     o Android so deixa apps do sistema"
+  echo "     fazerem isso.)"
 fi
 echo ""
 echo "  PASSO 5 - Confira"
