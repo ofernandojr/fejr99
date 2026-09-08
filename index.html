@@ -1211,24 +1211,30 @@
     }
 
     /* ===== INICIAR / VOLTAR ===== */
+    // Entrar e sair do prompter e uma mudanca de TELA neste aparelho, nao um
+    // comando de reproducao. Antes os dois lados empurravam o estado local
+    // para todos: sair mandava "playing: false" e parava a leitura no outro
+    // aparelho, e entrar sobrescrevia a posicao compartilhada com a local.
+    // Quem para a leitura e o botao PARAR, e mais ninguem.
     function iniciarPrompter() {
       lerSettings();
       montarPrompter();
       aplicarOffset();
       atualizarProgresso();
-      $('#blackout').classList.add('hidden');
+      // Alinha os botoes com o estado que ja veio do servidor.
+      const b = $('#btnPlay');
+      b.textContent = scrollState.playing ? 'PARAR' : 'PLAY';
+      b.classList.toggle('parar', scrollState.playing);
+      atualizarRcPlay();
       showPrompter();
       sincronizarPonteiro();
       mostrarBarra();
       mostrarDicaPrompter();
       ativarWakeLock();
       travarPaisagem();
-      pushLive(true);
     }
     $('#btnIniciar').addEventListener('click', iniciarPrompter);
     $('#btnVoltar').addEventListener('click', () => {
-      scrollState.playing = false;
-      pushLive(true);
       liberarWakeLock();
       destravarOrientacao();
       pararRelogioDaBarra();

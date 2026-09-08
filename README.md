@@ -24,7 +24,7 @@ Na tela do prompter:
 | Arrastar para cima ou para baixo | Rola o texto |
 | Botões **−** e **+** | Mudam a velocidade |
 | Botões **&#124;◀** e **▶&#124;** | Pulam para o bloco anterior / seguinte |
-| Botão **⟵ VOLTAR** | Sai do prompter |
+| Botão **⟵ VOLTAR** | Sai do prompter (não para a leitura nos outros aparelhos) |
 
 No **Passo 2** cada bloco aparece numerado e com o texto inteiro. Toque no
 texto para abrir ou fechar o bloco todo, e no ✎ para editar numa caixa grande.
