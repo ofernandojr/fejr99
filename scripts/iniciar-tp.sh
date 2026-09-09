@@ -123,7 +123,31 @@ termux-wake-lock 2>/dev/null
 
 echo "[..] Ligando o servidor..."
 cd "$PROJ" || exit 1
-node server.js > "$PROJ/server.log" 2>&1 &
+
+# O log crescia sem limite. Passou de ~1 MB, recomeca guardando o anterior.
+LOG="$PROJ/server.log"
+if [ -f "$LOG" ]; then
+  TAM=$(wc -c < "$LOG" 2>/dev/null || echo 0)
+  if [ "$TAM" -gt 1000000 ] 2>/dev/null; then
+    mv "$LOG" "$LOG.old" 2>/dev/null || true
+  fi
+fi
+
+# Supervisor: se o Node morrer (erro, falta de memoria, Android matando o
+# processo), sobe de novo sozinho. Antes uma queda encerrava a transmissao
+# e so um toque manual trazia o servidor de volta.
+(
+  while true; do
+    node server.js >> "$LOG" 2>&1
+    CODIGO=$?
+    # 0 = saiu de proposito (Ctrl+C encerra o script inteiro de qualquer jeito).
+    [ "$CODIGO" = "0" ] && break
+    echo "[$(date '+%H:%M:%S')] servidor caiu (codigo $CODIGO); subindo de novo" >> "$LOG"
+    sleep 2
+  done
+) &
+SUPERVISOR=$!
+
 i=0
 while [ $i -lt 10 ]; do
   servidor_rodando && break
@@ -243,4 +267,6 @@ echo "  volte aqui e pressione Ctrl + C."
 echo ""
 
 # Segura a sessao: o servidor e filho dela e cairia junto.
-wait
+# Ctrl+C aqui derruba o supervisor junto, que e o comportamento esperado.
+trap 'kill "$SUPERVISOR" 2>/dev/null; pkill -f "node server.js" 2>/dev/null; exit 0' INT TERM
+wait "$SUPERVISOR" 2>/dev/null || wait

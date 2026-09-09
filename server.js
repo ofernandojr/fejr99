@@ -26,6 +26,40 @@ const estado = { pauta: null, settings: null, live: null };
 // Clientes SSE conectados
 let clientes = [];
 
+/* ---------- Estado guardado em disco ----------
+   Sem isto, derrubar o Termux ou reiniciar o tablet apagava a pauta: o
+   servidor voltava vazio e os aparelhos disputavam qual copia local
+   sobrescreveria a do outro. */
+const ARQ_ESTADO = path.join(ROOT, 'estado.json');
+
+try {
+  const bruto = fs.readFileSync(ARQ_ESTADO, 'utf8');
+  const salvo = JSON.parse(bruto);
+  ['pauta', 'settings', 'live'].forEach((k) => {
+    if (salvo && salvo[k] !== undefined) estado[k] = salvo[k];
+  });
+  if (estado.pauta) {
+    console.log('Pauta recuperada do disco (' + estado.pauta.length + ' blocos).');
+  }
+} catch (e) { /* primeira execucao, ou arquivo corrompido: comeca vazio */ }
+
+let gravacaoPendente = null;
+function salvarEstado() {
+  // Agrupado: a rolagem gera dezenas de atualizacoes por segundo e nao vale
+  // um write a cada uma.
+  if (gravacaoPendente) return;
+  gravacaoPendente = setTimeout(() => {
+    gravacaoPendente = null;
+    const tmp = ARQ_ESTADO + '.tmp';
+    // Grava num temporario e renomeia: se faltar energia no meio, o arquivo
+    // bom continua intacto em vez de virar um JSON pela metade.
+    fs.writeFile(tmp, JSON.stringify(estado), (err) => {
+      if (err) return;
+      fs.rename(tmp, ARQ_ESTADO, () => {});
+    });
+  }, 2000);
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -35,6 +69,9 @@ const MIME = {
   '.png': 'image/png',
   '.ico': 'image/x-icon'
 };
+
+// Quando o servidor pediu a ultima vez que alguem enviasse a pauta.
+let pedidoSemearEm = 0;
 
 function broadcast(obj) {
   const linha = 'data: ' + JSON.stringify(obj) + '\n\n';
@@ -72,6 +109,15 @@ const server = http.createServer((req, res) => {
     ['pauta', 'settings', 'live'].forEach((k) => {
       if (estado[k] !== null) res.write('data: ' + JSON.stringify({ kind: k, data: estado[k], by: 'server' }) + '\n\n');
     });
+
+    // Servidor sem pauta: pede a UM cliente que mande a dele. Antes todos
+    // mandavam a propria copia depois de um tempo fixo e a ultima a chegar
+    // vencia - dava para uma pauta velha sobrescrever a boa.
+    if (estado.pauta === null && Date.now() - pedidoSemearEm > 3000) {
+      pedidoSemearEm = Date.now();
+      res.write('data: ' + JSON.stringify({ kind: 'semear', by: 'server' }) + '\n\n');
+    }
+
     req.on('close', () => { clientes = clientes.filter((c) => c !== res); });
     return;
   }
@@ -85,6 +131,11 @@ const server = http.createServer((req, res) => {
         const msg = JSON.parse(body);
         if (['pauta', 'settings', 'live'].includes(msg.kind)) {
           estado[msg.kind] = msg.data;
+          broadcast(msg);
+          salvarEstado();
+        } else if (msg.kind === 'comando') {
+          // Comandos (ex.: pular para um bloco) sao passageiros: so passam
+          // adiante, nao viram estado nem vao para o disco.
           broadcast(msg);
         }
         res.writeHead(200); res.end('ok');
@@ -104,6 +155,15 @@ const server = http.createServer((req, res) => {
     res.end(data);
   });
 });
+
+/* Conexao SSE parada e derrubada em silencio pelo Android ou pelo roteador,
+   e o app so descobria ao tentar usar. Este ping mantem o canal vivo e da ao
+   cliente um sinal de que o servidor ainda esta la. */
+setInterval(() => {
+  clientes.forEach((res) => {
+    try { res.write(': ping\n\n'); } catch (e) {}
+  });
+}, 20000);
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log('TVWEB Prompter — servidor local rodando.');

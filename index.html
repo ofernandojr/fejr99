@@ -205,6 +205,20 @@
     .rc-sync { font-size: 13px; font-weight: 700; color: #888; flex: 1; text-align: center; }
     .rc-sync.on { color: #42b72a; }
     .rc-vel { font-size: 20px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+    /* Tira de blocos: ir direto ao bloco 7 sem apertar PROXIMO seis vezes. */
+    .rc-blocos {
+      display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0;
+      padding-bottom: 4px; -webkit-overflow-scrolling: touch;
+    }
+    .rc-blocos:empty { display: none; }
+    .rc-blocos button {
+      flex: 0 0 auto; min-width: 54px; min-height: 54px;
+      border: 2px solid #333; border-radius: 12px;
+      background: rgba(255,255,255,.07); color: #fff;
+      font-size: 19px; font-weight: 800; cursor: pointer;
+    }
+    .rc-blocos button.atual { border-color: #42b72a; background: rgba(66,183,42,.22); }
+
     #rcPlay { width: 100%; flex: 2; background: #42b72a; border: none; border-radius: 18px; color: #fff; font-size: clamp(36px, 8vw, 60px); font-weight: 800; cursor: pointer; min-height: 120px; box-shadow: 0 6px 20px rgba(66,183,42,.4); }
     #rcPlay.parar { background: #f02849; box-shadow: 0 6px 20px rgba(240,40,73,.4); }
     .rc-row { display: flex; gap: 10px; flex: 1; min-height: 0; }
@@ -223,6 +237,22 @@
     #promProgresso { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,.12); z-index: 1003; }
     #promProgressoBar { height: 100%; width: 0; background: #42b72a; transition: width .1s linear; }
 
+    /* Marcador da linha de leitura: fica na altura em que o texto deve ser
+       lido (os mesmos 42vh do padding do #promTrack). */
+    #promMarcador {
+      position: fixed; top: 42vh; left: 0; right: 0; height: 0;
+      z-index: 1001; pointer-events: none;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #promMarcador span {
+      width: 0; height: 0;
+      border-top: 13px solid transparent;
+      border-bottom: 13px solid transparent;
+      filter: drop-shadow(0 0 3px rgba(0,0,0,.9));
+    }
+    #promMarcador span:first-child { border-left: 18px solid #FFC107; }
+    #promMarcador span:last-child  { border-right: 18px solid #FFC107; }
+
     /* Camada de toque: cobre a tela, fica abaixo dos controles/botões */
     #promTouch { position: absolute; inset: 0; z-index: 1000; }
 
@@ -232,6 +262,11 @@
       color: #fff; font-family: Arial, Helvetica, sans-serif; font-weight: bold;
       text-align: center; white-space: pre-wrap; word-break: break-word;
       margin: 0 auto 60vh; line-height: 1.25;
+    }
+    /* Marcacoes de producao — [VT], [AO VIVO], [SOBE SOM]. Menores e em ambar
+       para o olho pular em vez de ler junto com o texto. */
+    #promTrack .block .marcacao {
+      color: #FFC107; font-size: .62em; opacity: .9; letter-spacing: .5px;
     }
     .espelhado #promViewport { transform: scaleX(-1); }
     .prom-aviso { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); text-align: center; color: #fff; font-size: 20px; padding: 0 24px; }
@@ -442,6 +477,7 @@
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
       <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
+      <label class="chk"><input type="checkbox" id="chkMarcador" checked> Mostrar a linha de leitura <small>(setas na altura em que o texto deve ser lido)</small></label>
       <label class="chk hidden" id="linhaMouse"><input type="checkbox" id="chkMouse"> Corrigir o mouse <small>(inverte esquerda/direita, para a tela espelhada no suporte)</small></label>
     </div>
 
@@ -484,6 +520,7 @@
       <span class="rc-sync" id="rcSync">⬤ Desconectado</span>
       <span class="rc-vel">Vel: <span id="rcVelVal">1.5</span></span>
     </div>
+    <div class="rc-blocos" id="rcBlocos"></div>
     <button id="rcPlay">▶ PLAY</button>
     <div class="rc-row">
       <button id="rcPrev">|◀ ANTERIOR</button>
@@ -506,6 +543,8 @@
 
     <!-- Camada de toque: 1 toque = play/pause; arrastar na vertical = velocidade -->
     <div id="promTouch"></div>
+
+    <div id="promMarcador" class="hidden"><span></span><span></span></div>
 
     <div id="promViewport">
       <div id="promTrack"></div>
@@ -599,6 +638,7 @@
     }
 
     function renderLista() {
+      montarRcBlocos();
       const ul = $('#listaPauta');
       ul.innerHTML = '';
       $('#dicaVazia').classList.toggle('hidden', Pauta.length > 0);
@@ -776,6 +816,31 @@
       $('#rcVelVal').textContent = Settings.velocidade.toFixed(1);
     }
 
+    // A tira usa o INDICE do bloco, nao a posicao: neste aparelho o prompter
+    // costuma estar fechado e blocos escondidos nao tem altura para medir.
+    function montarRcBlocos() {
+      const cont = $('#rcBlocos');
+      if (!cont) return;
+      cont.innerHTML = '';
+      Pauta.forEach((texto, i) => {
+        const b = document.createElement('button');
+        b.textContent = String(i + 1);
+        b.title = texto.slice(0, 60);
+        b.onclick = () => {
+          irParaBloco(i, true);
+          marcarRcBlocoAtual(i);
+        };
+        cont.appendChild(b);
+      });
+    }
+
+    function marcarRcBlocoAtual(indice) {
+      const botoes = $('#rcBlocos') ? $('#rcBlocos').children : [];
+      for (let i = 0; i < botoes.length; i++) {
+        botoes[i].classList.toggle('atual', i === indice);
+      }
+    }
+
     $('#rcPlay').addEventListener('click', () => { togglePlay(); atualizarRcPlay(); });
     $('#rcPrev').addEventListener('click', () => pularBloco(-1));
     $('#rcNext').addEventListener('click', () => pularBloco(1));
@@ -800,8 +865,20 @@
       Pauta.forEach(texto => {
         const div = document.createElement('div');
         div.className = 'block';
-        div.textContent = texto;
         div.style.fontSize = Settings.fonte + 'px';
+        // Monta em pedacos com textContent: nada de innerHTML, para um
+        // colchete no meio do texto nunca virar marcacao HTML.
+        String(texto).split(/(\[[^\]]*\])/g).forEach((parte) => {
+          if (!parte) return;
+          if (parte.charAt(0) === '[' && parte.charAt(parte.length - 1) === ']') {
+            const marca = document.createElement('span');
+            marca.className = 'marcacao';
+            marca.textContent = parte;
+            div.appendChild(marca);
+          } else {
+            div.appendChild(document.createTextNode(parte));
+          }
+        });
         promTrack.appendChild(div);
       });
       // modoControle é local: anula o espelho somente neste tablet
@@ -855,6 +932,26 @@
       atualizarRcStatus();
       pushLive();
       pushSettings();
+    }
+
+    // Vai direto a um bloco pelo numero. O aparelho que so comanda costuma
+    // estar com o prompter fechado e, escondido, os blocos nao tem altura
+    // medivel - por isso viaja o INDICE do bloco, e cada tela calcula a
+    // propria posicao.
+    function irParaBloco(indice, avisarOutros) {
+      // Valida pela PAUTA, nao pelo DOM: no aparelho que so comanda o prompter
+      // nunca foi montado, a lista de blocos esta vazia e a checagem antiga
+      // saia antes de enviar o comando - o salto nao chegava a lugar nenhum.
+      if (indice < 0 || indice >= Pauta.length) return;
+      if (avisarOutros) enviarComando({ acao: 'bloco', indice: indice });
+
+      const blocks = document.querySelectorAll('#promTrack .block');
+      if (!blocks[indice]) return;   // este aparelho nao esta exibindo o texto
+      const offsetBase = window.innerHeight * 0.42;
+      scrollState.offset = Math.max(0, blocks[indice].offsetTop - offsetBase);
+      aplicarOffset();
+      atualizarProgresso();
+      if (!prompterEl.classList.contains('hidden')) pushLive(true);
     }
 
     function pularBloco(dir) {
@@ -1160,6 +1257,20 @@
       try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     }
 
+    /* ===== MARCADOR DA LINHA DE LEITURA ===== */
+    // Local de cada aparelho: a tela de exibicao quer o marcador, quem so
+    // comanda normalmente nao.
+    let marcadorLigado = localStorage.getItem('tvweb_marcador') !== '0';
+    function aplicarMarcador() {
+      $('#promMarcador').classList.toggle('hidden', !marcadorLigado);
+    }
+    $('#chkMarcador').checked = marcadorLigado;
+    $('#chkMarcador').addEventListener('change', () => {
+      marcadorLigado = $('#chkMarcador').checked;
+      localStorage.setItem('tvweb_marcador', marcadorLigado ? '1' : '0');
+      aplicarMarcador();
+    });
+
     /* ===== BARRA DE COMANDOS QUE SOME SOZINHA ===== */
     // Sem mexer na tela por alguns segundos, os controles somem e fica so o
     // texto. Qualquer toque, movimento de mouse, roda ou tecla traz de volta.
@@ -1227,6 +1338,7 @@
       b.classList.toggle('parar', scrollState.playing);
       atualizarRcPlay();
       showPrompter();
+      aplicarMarcador();
       sincronizarPonteiro();
       mostrarBarra();
       mostrarDicaPrompter();
@@ -1513,6 +1625,7 @@
 
     // Estado do servidor local (SSE)
     let srvBase = null, srvEvents = null, srvConectado = false, srvRecebeuPauta = false;
+    let ultimoSinal = 0;   // quando chegou a ultima mensagem ou ping do servidor
 
     function atualizarIndicadorPrompter() {
       $('#syncIndicador').classList.toggle('hidden', !srvConectado);
@@ -1570,6 +1683,15 @@
           pushLive(bumpGen);
         }, espera);
       }
+    }
+
+    // Comandos sao passageiros: valem no momento em que chegam e nao viram
+    // estado. Serve para "va ao bloco 7", que nao tem sentido guardar.
+    function enviarComando(dados) { enviarSrv('comando', dados); }
+
+    function executarComando(dados) {
+      if (!dados) return;
+      if (dados.acao === 'bloco') irParaBloco(dados.indice, false);
     }
 
     // ----- LEITURAS (do servidor para este dispositivo) -----
@@ -1681,17 +1803,8 @@
 
       srvEvents.onopen = () => {
         srvConectado = true;
+        ultimoSinal = Date.now();
         atualizarIndicadorPrompter();
-        // Se o servidor estiver vazio e este tablet já tiver pauta, semeia o estado.
-        setTimeout(() => {
-          if (srvConectado && !srvRecebeuPauta && Pauta.length) {
-            enviarSrv('pauta', Pauta);
-            enviarSrv('settings', {
-              fonte: Settings.fonte, velocidade: Settings.velocidade,
-              espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
-            });
-          }
-        }, 800);
       };
 
       // O EventSource tenta reconectar sozinho; o indicador do topo mostra o estado.
@@ -1701,14 +1814,45 @@
       };
 
       srvEvents.onmessage = (ev) => {
+        ultimoSinal = Date.now();
         let msg;
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
         if (msg.by === CLIENT_ID) return; // ignora o próprio eco
+
+        // O servidor esta sem pauta e escolheu ESTE aparelho para envia-la.
+        // So um recebe o pedido, entao nao ha duas copias disputando.
+        if (msg.kind === 'semear') {
+          if (Pauta.length) {
+            enviarSrv('pauta', Pauta);
+            enviarSrv('settings', {
+              fonte: Settings.fonte, velocidade: Settings.velocidade,
+              espelho: Settings.espelho, espelhoUI: Settings.espelhoUI
+            });
+          }
+          return;
+        }
+
+        if (msg.kind === 'comando') { executarComando(msg.data); return; }
+
         if (msg.kind === 'pauta') { srvRecebeuPauta = true; aplicarPautaRemota(msg.data); }
         else if (msg.kind === 'settings') aplicarSettingsRemoto(msg.data);
         else if (msg.kind === 'live') aplicarLiveRemoto(msg.data);
       };
     }
+
+    /* O EventSource nem sempre percebe que a conexao morreu: o Android ou o
+       roteador derrubam o canal em silencio e o navegador fica esperando para
+       sempre. Como o servidor manda um ping a cada 20s, um silencio longo
+       significa conexao perdida - e reconectar e mais confiavel do que
+       esperar um erro que pode nao vir. */
+    const SILENCIO_MAXIMO = 50000;
+    setInterval(() => {
+      if (!srvBase || !srvEvents) return;
+      if (Date.now() - ultimoSinal < SILENCIO_MAXIMO) return;
+      ultimoSinal = Date.now();
+      const base = srvBase;
+      conectarServidor(base);   // derruba o canal velho e abre outro
+    }, 15000);
 
     // Conecta sozinho quando o app é aberto PELO servidor (endereço http://).
     // Não há endereço para digitar: quem abre pelo servidor já entra sincronizado.

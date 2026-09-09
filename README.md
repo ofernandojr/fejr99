@@ -33,7 +33,15 @@ Sem mexer na tela por **3 segundos**, os botões e o VOLTAR somem e fica só o
 texto, como num player de vídeo. Qualquer toque, movimento de mouse ou tecla traz
 tudo de volta — e esse primeiro toque **só faz reaparecer**, não pausa a leitura.
 
-O texto fica salvo sozinho no aparelho. Fechar o app não apaga nada.
+O texto fica salvo sozinho no aparelho **e no servidor**. Derrubar o Termux,
+reiniciar o tablet ou o servidor cair não apaga a pauta: ele grava em
+`estado.json` e recarrega ao subir.
+
+**Marcações de produção** entre colchetes — `[VT]`, `[AO VIVO]`, `[SOBE SOM]` —
+saem menores e em âmbar no prompter, para o olho pular em vez de ler junto.
+
+Uma **seta em cada borda** marca a altura em que o texto deve ser lido. Dá para
+desligar no Passo 3.
 
 ### Trazer o texto de um arquivo
 
@@ -237,6 +245,9 @@ ali.
 
 No topo do app, toque em **🎮 Controle Remoto**. A tela vira um painel de
 botões grandes: PLAY, anterior/próximo, − VEL / + VEL e BLACKOUT (tela preta).
+
+Em cima fica uma **tira numerada com os blocos**: toque no 7 e a tela de exibição
+pula direto para lá, sem apertar PRÓXIMO seis vezes.
 
 Se esse aparelho também mostrar o texto, marque *Não espelhar neste aparelho*
 no Passo 3 — o espelho continua valendo só na tela de exibição.
