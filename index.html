@@ -339,6 +339,8 @@
     #btnPrev, #btnNext { background: rgba(24,119,242,.9); border-color: #155dbf; }
     #btnDesce  { background: rgba(230,138,0,.9); border-color: #c47700; }
     #btnSobe   { background: rgba(156,39,176,.9); border-color: #7b1fa2; }
+    #btnBlackout { background: rgba(20,20,22,.92); border-color: #555; }
+    #btnBlackout.ativo { background: #0a0a0a; border-color: #f02849; color: #f02849; }
 
     #blackout { position: fixed; inset: 0; background: #000; z-index: 1001; }
 
@@ -477,6 +479,7 @@
       <label class="chk"><input type="checkbox" id="chkEspelho" checked> Espelhar texto <small>(deixe ligado se usar vidro/espelho na frente da câmera)</small></label>
       <label class="chk"><input type="checkbox" id="chkEspelhoUI"> Espelhar também os botões</label>
       <label class="chk"><input type="checkbox" id="chkModoControle"> Não espelhar neste aparelho <small>(para quem só comanda)</small></label>
+      <label class="chk"><input type="checkbox" id="chkBotaoBlackout" checked> Botão de tela preta no prompter <small>(para quem opera direto na tela de leitura)</small></label>
       <label class="chk"><input type="checkbox" id="chkMarcador" checked> Mostrar a linha de leitura <small>(setas na altura em que o texto deve ser lido)</small></label>
       <label class="chk hidden" id="linhaMouse"><input type="checkbox" id="chkMouse"> Corrigir o mouse <small>(inverte esquerda/direita, para a tela espelhada no suporte)</small></label>
     </div>
@@ -557,6 +560,7 @@
       <button id="btnPlay">PLAY</button>
       <button id="btnSobe" title="Aumentar Velocidade">+</button>
       <button id="btnNext" title="Próximo Bloco">▶|</button>
+      <button id="btnBlackout" class="hidden" title="Tela preta">⬛</button>
     </div>
 
     <div id="blackout" class="hidden"></div>
@@ -846,10 +850,7 @@
     $('#rcNext').addEventListener('click', () => pularBloco(1));
     $('#rcVelDown').addEventListener('click', () => { ajustarVelocidade(-0.1); atualizarRcStatus(); });
     $('#rcVelUp').addEventListener('click', () => { ajustarVelocidade(0.1); atualizarRcStatus(); });
-    $('#rcBlackout').addEventListener('click', () => {
-      toggleBlackout();
-      $('#rcBlackout').classList.toggle('ativo', !$('#blackout').classList.contains('hidden'));
-    });
+    $('#rcBlackout').addEventListener('click', toggleBlackout);
     $('#rcVoltar').addEventListener('click', () => aplicarPapel('exibicao'));
 
     /* ===== PROMPTER: MONTAGEM ===== */
@@ -1230,8 +1231,17 @@
     })();
 
     /* ===== BLACKOUT ===== */
+    // A aparencia dos dois botoes sai sempre do estado real da tela preta,
+    // em vez de cada lugar inverter a sua por conta.
+    function atualizarVisualBlackout() {
+      const ligado = !$('#blackout').classList.contains('hidden');
+      $('#rcBlackout').classList.toggle('ativo', ligado);
+      $('#btnBlackout').classList.toggle('ativo', ligado);
+    }
+
     function toggleBlackout() {
       $('#blackout').classList.toggle('hidden');
+      atualizarVisualBlackout();
       pushLive(); // o blackout vale para todos os dispositivos da sessão
     }
 
@@ -1256,6 +1266,21 @@
     function destravarOrientacao() {
       try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     }
+
+    /* ===== BOTAO DE TELA PRETA NO PROMPTER ===== */
+    // Local de cada aparelho: quem opera pela tela de leitura quer o botao a
+    // mao; quem so exibe prefere a barra sem ele.
+    let botaoBlackoutLigado = localStorage.getItem('tvweb_botaoBlackout') !== '0';
+    function aplicarBotaoBlackout() {
+      $('#btnBlackout').classList.toggle('hidden', !botaoBlackoutLigado);
+    }
+    $('#chkBotaoBlackout').checked = botaoBlackoutLigado;
+    $('#chkBotaoBlackout').addEventListener('change', () => {
+      botaoBlackoutLigado = $('#chkBotaoBlackout').checked;
+      localStorage.setItem('tvweb_botaoBlackout', botaoBlackoutLigado ? '1' : '0');
+      aplicarBotaoBlackout();
+    });
+    $('#btnBlackout').addEventListener('click', toggleBlackout);
 
     /* ===== MARCADOR DA LINHA DE LEITURA ===== */
     // Local de cada aparelho: a tela de exibicao quer o marcador, quem so
@@ -1338,6 +1363,8 @@
       b.classList.toggle('parar', scrollState.playing);
       atualizarRcPlay();
       showPrompter();
+      aplicarBotaoBlackout();
+      atualizarVisualBlackout();
       aplicarMarcador();
       sincronizarPonteiro();
       mostrarBarra();
@@ -1745,7 +1772,7 @@
       // blackout
       if (typeof live.blackout === 'boolean') {
         $('#blackout').classList.toggle('hidden', !live.blackout);
-        $('#rcBlackout').classList.toggle('ativo', live.blackout);
+        atualizarVisualBlackout();
       }
 
       if (typeof live.playing === 'boolean' && live.playing !== scrollState.playing) {
@@ -1887,10 +1914,7 @@
         case 'down':     ajustarVelocidade(-0.1); break;
         case 'next':     pularBloco(1); break;
         case 'prev':     pularBloco(-1); break;
-        case 'blackout':
-          toggleBlackout();
-          $('#rcBlackout').classList.toggle('ativo', !$('#blackout').classList.contains('hidden'));
-          break;
+        case 'blackout': toggleBlackout(); break;
       }
     }
 

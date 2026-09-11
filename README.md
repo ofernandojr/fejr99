@@ -24,6 +24,7 @@ Na tela do prompter:
 | Arrastar para cima ou para baixo | Rola o texto |
 | Botões **−** e **+** | Mudam a velocidade |
 | Botões **&#124;◀** e **▶&#124;** | Pulam para o bloco anterior / seguinte |
+| Botão **⬛** | Tela preta, nos dois aparelhos ao mesmo tempo |
 | Botão **⟵ VOLTAR** | Sai do prompter (não para a leitura nos outros aparelhos) |
 
 No **Passo 2** cada bloco aparece numerado e com o texto inteiro. Toque no
@@ -42,6 +43,11 @@ saem menores e em âmbar no prompter, para o olho pular em vez de ler junto.
 
 Uma **seta em cada borda** marca a altura em que o texto deve ser lido. Dá para
 desligar no Passo 3.
+
+O **botão de tela preta** fica na barra do prompter, para quem opera direto na
+tela de leitura em vez de usar o Controle Remoto. Ele continua clicável por cima
+da tela preta, então dá para desligar pelo mesmo botão. Quem só exibe pode tirá-lo
+da barra no Passo 3.
 
 ### Trazer o texto de um arquivo
 
